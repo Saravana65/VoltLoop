@@ -89,13 +89,13 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 | **Phase 2** | Relational Database & Seed Data | **Complete** | 5 core tables, relational schema, CHECK constraints, realistic seed dataset, 15 analytical queries. |
 | **Phase 3** | Java Backend + JDBC Connectivity | **Complete** | Spring Boot REST API, JDBC repositories with `PreparedStatement`, QR identification endpoint, session lifecycle, and unit tests. |
 | **Phase 4** | Smart Charging Allocation Engine & QR Workflow | **Complete** | Rule-based priority scoring, charger compatibility matrix, slot overlap conflict detection, pure JDBC transaction control, and session energy/cost auditing. |
-| **Phase 5** | React Frontend & Dashboard UI | *Upcoming* | Building React components, live operator dashboard, and interactive QR camera scanning workflow. |
+| **Phase 5** | React Frontend & Dashboard UI | **Complete** | Modern React 18 + Vite frontend, responsive dark fleet dashboard, QR identification UI, smart allocation recommendation page, and centralized API layer. |
 
 ---
 
 ## 6. Smart Charging Allocation Engine (Phase 4)
 
-VoltNexus incorporates an explainable, deterministic rule-based allocation engine designed for real-world campus EV fleets without opaque AI black-boxes.
+VoltLoop incorporates an explainable, deterministic rule-based allocation engine designed for real-world campus EV fleets without opaque AI black-boxes.
 
 ### Core Mathematical Formulations:
 

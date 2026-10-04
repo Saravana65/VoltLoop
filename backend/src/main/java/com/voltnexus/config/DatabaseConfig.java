@@ -32,7 +32,7 @@ public class DatabaseConfig {
     public CommandLineRunner databaseConnectionVerifier(DataSource dataSource) {
         return args -> {
             logger.info("=============================================================");
-            logger.info("VoltNexus: Initializing JDBC Database Connectivity Check...");
+            logger.info("VoltLoop: Initializing JDBC Database Connectivity Check...");
             try (Connection connection = dataSource.getConnection()) {
                 DatabaseMetaData metaData = connection.getMetaData();
                 logger.info("JDBC Connection Successful!");
