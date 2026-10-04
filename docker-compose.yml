@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: voltnexus-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: voltnexus
+      MYSQL_USER: voltnexus_user
+      MYSQL_PASSWORD: voltnexus_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - voltnexus_db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  voltnexus_db_data:
+    driver: local
