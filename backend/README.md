@@ -1,6 +1,6 @@
-# VoltNexus — Backend Service (Spring Boot + JDBC)
+# VoltLoop — Backend Service (Spring Boot + JDBC)
 
-The backend service for **VoltNexus: Smart Campus EV Fleet & Energy Management System**.  
+The backend service for **VoltLoop: Smart Campus EV Fleet & Energy Management System**.  
 It provides a RESTful API layer built on **Java 17** and **Spring Boot**, utilizing **pure JDBC (`PreparedStatement`)** for all MySQL database interactions.
 
 ---
@@ -20,7 +20,7 @@ Spring Boot Services (@Transactional)
 JDBC Repositories (JdbcTemplate / java.sql.Connection)
        │
        ▼  TCP Port 3306
-MySQL 8.0 (Docker Container: voltnexus-mysql)
+MySQL 8.0 (Docker Container: VoltLoop-mysql)
 ```
 
 ---
@@ -48,12 +48,12 @@ docker compose ps
 *Alternatively, if running the container manually:*
 ```bash
 docker run -d \
-  --name voltnexus-mysql \
+  --name VoltLoop-mysql \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=rootpassword \
-  -e MYSQL_DATABASE=voltnexus \
-  -e MYSQL_USER=voltnexus_user \
-  -e MYSQL_PASSWORD=voltnexus_pass \
+  -e MYSQL_DATABASE=VoltLoop \
+  -e MYSQL_USER=VoltLoop_user \
+  -e MYSQL_PASSWORD=VoltLoop_pass \
   mysql:8.0
 ```
 
@@ -67,9 +67,9 @@ The backend avoids hardcoded credentials. It uses sensible defaults with environ
 |---|---|---|
 | `DB_HOST` | `localhost` | MySQL host (or container IP) |
 | `DB_PORT` | `3306` | MySQL port |
-| `DB_NAME` | `voltnexus` | Relational database schema name |
-| `DB_USER` | `voltnexus_user` | Database user |
-| `DB_PASSWORD` | `voltnexus_pass` | Database user password |
+| `DB_NAME` | `VoltLoop` | Relational database schema name |
+| `DB_USER` | `VoltLoop_user` | Database user |
+| `DB_PASSWORD` | `VoltLoop_pass` | Database user password |
 
 ### Setting Environment Variables:
 
@@ -77,16 +77,16 @@ The backend avoids hardcoded credentials. It uses sensible defaults with environ
 ```powershell
 $env:DB_HOST="localhost"
 $env:DB_PORT="3306"
-$env:DB_USER="voltnexus_user"
-$env:DB_PASSWORD="voltnexus_pass"
+$env:DB_USER="VoltLoop_user"
+$env:DB_PASSWORD="VoltLoop_pass"
 ```
 
 **Linux / macOS:**
 ```bash
 export DB_HOST="localhost"
 export DB_PORT="3306"
-export DB_USER="voltnexus_user"
-export DB_PASSWORD="voltnexus_pass"
+export DB_USER="VoltLoop_user"
+export DB_PASSWORD="VoltLoop_pass"
 ```
 
 ---
@@ -104,7 +104,7 @@ mvn spring-boot:run
 
 # Or package into an executable JAR:
 mvn clean package -DskipTests
-java -jar target/voltnexus-backend-1.0.0.jar
+java -jar target/VoltLoop-backend-1.0.0.jar
 ```
 
 The application starts on **`http://localhost:8080`**.  
@@ -119,7 +119,7 @@ On startup, `DatabaseConfig` automatically runs a connectivity check and logs th
 |---|---|---|
 | `GET` | `/api/vehicles` | Retrieve all registered EVs with owner info |
 | `GET` | `/api/vehicles/{id}` | Retrieve EV by vehicle ID |
-| `GET` | `/api/vehicles/qr/{qrIdentifier}` | **QR Code EV lookup** (e.g. `VN-EV-001`) |
+| `GET` | `/api/vehicles/qr/{qrIdentifier}` | **QR Code EV lookup** (e.g. `VL-EV-001`) |
 | `POST` | `/api/vehicles` | Register a new EV into the fleet |
 | `PUT` | `/api/vehicles/{id}/battery` | Update real-time battery percentage |
 | `PUT` | `/api/vehicles/{id}/status` | Update vehicle status (`ACTIVE`, `INACTIVE`, `CHARGING`) |
@@ -165,7 +165,7 @@ On startup, `DatabaseConfig` automatically runs a connectivity check and logs th
 ### 1. QR Code Scan Identification
 **Request:**
 ```http
-GET /api/vehicles/qr/VN-EV-001 HTTP/1.1
+GET /api/vehicles/qr/VL-EV-001 HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -178,7 +178,7 @@ Host: localhost:8080
   "registrationNo": "KA-01-EV-1021",
   "batteryCapacity": 3.5,
   "currentBattery": 85.0,
-  "qrIdentifier": "VN-EV-001",
+  "qrIdentifier": "VL-EV-001",
   "status": "ACTIVE",
   "createdAt": "2026-08-12T15:30:00",
   "ownerName": "Amit Verma",
@@ -215,7 +215,7 @@ Content-Type: application/json
   "status": "ACTIVE",
   "createdAt": "2026-10-04T15:07:30",
   "registrationNo": "KA-01-EV-1021",
-  "qrIdentifier": "VN-EV-001",
+  "qrIdentifier": "VL-EV-001",
   "stationName": "CS-ENGG-01",
   "stationLocation": "Engineering Block North Lot"
 }
@@ -250,7 +250,7 @@ Content-Type: application/json
   "chargingCost": 7.95,
   "status": "COMPLETED",
   "registrationNo": "KA-01-EV-1021",
-  "qrIdentifier": "VN-EV-001"
+  "qrIdentifier": "VL-EV-001"
 }
 ```
 

@@ -1,10 +1,10 @@
 -- =============================================================================
--- VoltNexus: Smart Campus EV Fleet & Energy Management System
+-- VoltLoop: Smart Campus EV Fleet & Energy Management System
 -- Phase 2: Comprehensive Seed Data
--- Database: voltnexus
+-- Database: voltloop
 -- =============================================================================
 
-USE voltnexus;
+USE voltloop;
 
 -- Clear previous test data before repopulating
 SET FOREIGN_KEY_CHECKS = 0;
@@ -30,14 +30,14 @@ INSERT INTO users (user_id, name, email, role, status, created_at) VALUES
 -- 2. Seed: vehicles (8 EVs with unique QR identifiers)
 -- -----------------------------------------------------------------------------
 INSERT INTO vehicles (vehicle_id, user_id, vehicle_type, registration_no, battery_capacity, current_battery, qr_identifier, status, created_at) VALUES
-(1, 3, '2-Wheeler (e-Scooter)',   'KA-01-EV-1021',  3.50,  85.00, 'VN-EV-001', 'ACTIVE',   '2026-08-12 10:00:00'),
-(2, 4, '4-Wheeler (Compact EV)',  'KA-01-EV-2045', 32.00,  18.50, 'VN-EV-002', 'ACTIVE',   '2026-08-16 11:20:00'),
-(3, 5, '4-Wheeler (Sedan EV)',    'KA-01-EV-3088', 40.00,  22.00, 'VN-EV-003', 'ACTIVE',   '2026-08-22 09:40:00'),
-(4, 2, 'Campus Shuttle Bus',      'KA-01-EV-4099', 65.00,  55.00, 'VN-EV-004', 'CHARGING', '2026-08-25 15:10:00'),
-(5, 3, '2-Wheeler (e-Motorbike)', 'KA-01-EV-5112',  4.00,  72.00, 'VN-EV-005', 'CHARGING', '2026-08-28 13:00:00'),
-(6, 4, 'Maintenance Utility Cart','KA-01-EV-6230', 15.00,  90.00, 'VN-EV-006', 'ACTIVE',   '2026-09-02 08:30:00'),
-(7, 6, '4-Wheeler (SUV EV)',      'KA-01-EV-7841', 50.00,  12.00, 'VN-EV-007', 'INACTIVE', '2026-09-05 16:15:00'),
-(8, 5, 'Campus Delivery Van',     'KA-01-EV-8910', 45.00,  64.00, 'VN-EV-008', 'ACTIVE',   '2026-09-10 14:45:00');
+(1, 3, '2-Wheeler (e-Scooter)',   'KA-01-EV-1021',  3.50,  85.00, 'VL-EV-001', 'ACTIVE',   '2026-08-12 10:00:00'),
+(2, 4, '4-Wheeler (Compact EV)',  'KA-01-EV-2045', 32.00,  18.50, 'VL-EV-002', 'ACTIVE',   '2026-08-16 11:20:00'),
+(3, 5, '4-Wheeler (Sedan EV)',    'KA-01-EV-3088', 40.00,  22.00, 'VL-EV-003', 'ACTIVE',   '2026-08-22 09:40:00'),
+(4, 2, 'Campus Shuttle Bus',      'KA-01-EV-4099', 65.00,  55.00, 'VL-EV-004', 'CHARGING', '2026-08-25 15:10:00'),
+(5, 3, '2-Wheeler (e-Motorbike)', 'KA-01-EV-5112',  4.00,  72.00, 'VL-EV-005', 'CHARGING', '2026-08-28 13:00:00'),
+(6, 4, 'Maintenance Utility Cart','KA-01-EV-6230', 15.00,  90.00, 'VL-EV-006', 'ACTIVE',   '2026-09-02 08:30:00'),
+(7, 6, '4-Wheeler (SUV EV)',      'KA-01-EV-7841', 50.00,  12.00, 'VL-EV-007', 'INACTIVE', '2026-09-05 16:15:00'),
+(8, 5, 'Campus Delivery Van',     'KA-01-EV-8910', 45.00,  64.00, 'VL-EV-008', 'ACTIVE',   '2026-09-10 14:45:00');
 
 -- -----------------------------------------------------------------------------
 -- 3. Seed: charging_stations (5 Campus Charging Stations)

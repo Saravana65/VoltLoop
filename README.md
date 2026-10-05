@@ -1,4 +1,4 @@
-# VoltNexus — Smart Campus EV Fleet & Energy Management System
+# VoltLoop — Smart Campus EV Fleet & Energy Management System
 
 A product-like, full-stack college Project-Based Learning (PBL) application designed to monitor, identify, allocate, and optimize electric vehicle charging and energy consumption across university campus infrastructure.
 
@@ -12,14 +12,14 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 - **Energy Accounting Gaps**: Lack of visibility into real kilowatt-hour (kWh) power consumption and charging costs.
 - **Double Booking Conflicts**: Unmanaged reservations leading to schedule collisions.
 
-**VoltNexus** solves this through automated QR-based EV identification, intelligent reservation conflict checks, real-time station state synchronization, and energy consumption auditing.
+**VoltLoop** solves this through automated QR-based EV identification, intelligent reservation conflict checks, real-time station state synchronization, and energy consumption auditing.
 
 ---
 
 ## 2. Core Project Features
 
 1. **EV Registration and Fleet Asset Management**: Stores vehicle profiles, battery capacities, and active states.
-2. **QR-Based EV Identification**: Every registered EV possesses a unique `qr_identifier` (e.g. `VN-EV-001`). Scanning retrieves EV telemetry instantly.
+2. **QR-Based EV Identification**: Every registered EV possesses a unique `qr_identifier` (e.g. `VL-EV-001`). Scanning retrieves EV telemetry instantly.
 3. **Charging Station Management**: Tracks station bays, charger types (AC Level 2, DC Fast), power ratings (kW), and connector standards (CCS2, Type 2).
 4. **Charging Slot Conflict Detection**: Prevents overlapping reservations on the same bay via interval collision detection.
 5. **Real-Time Charging Session Management**: Captures initial battery, dynamic charging states, and timestamps.
@@ -67,7 +67,7 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
                             │  TCP Connection (Port 3306)
 ┌───────────────────────────▼────────────────────────────┐
 │                    MySQL 8.0 Engine                    │
-│    - Database: voltnexus                               │
+│    - Database: voltloop                                │
 │    - Primary Keys, Foreign Keys, CHECK Constraints     │
 │    - B-tree Indexes (Fast QR & Slot Collision Lookups) │
 └───────────────────────────┬────────────────────────────┘
@@ -75,7 +75,7 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 ┌───────────────────────────▼────────────────────────────┐
 │                    Docker Container                    │
 │    - Image: mysql:8.0                                  │
-│    - Persistent Volume: voltnexus_db_data              │
+│    - Persistent Volume: voltloop_db_data               │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -141,14 +141,14 @@ VoltLoop incorporates an explainable, deterministic rule-based allocation engine
 ## 8. Quick Start Guide
 
 ### Step 1: Database Setup (Docker or Local MySQL)
-VoltNexus works seamlessly with either Docker or native MySQL 8.0:
+VoltLoop works seamlessly with either Docker or native MySQL 8.0:
 
 - **Option A (Docker):**
   ```bash
   docker compose up -d
   ```
 - **Option B (Native Windows MySQL):**
-  Connect to `localhost:3306` with credentials `voltnexus_user / voltnexus_pass` or root.
+  Connect to `localhost:3306` with credentials `voltloop_user / voltloop_pass` or root.
 
 ### Step 2: Start the Java Backend
 ```bash
@@ -162,7 +162,7 @@ The REST API will boot on `http://localhost:8080`.
 
 - **Identify Vehicle by QR Code:**
   ```bash
-  curl http://localhost:8080/api/vehicles/qr/VN-EV-001
+  curl http://localhost:8080/api/vehicles/qr/VL-EV-001
   ```
 - **Get Smart Station Recommendation for EV 2:**
   ```bash

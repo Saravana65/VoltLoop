@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { QrCode, Search, CheckCircle2, AlertCircle, Camera, RefreshCw } from 'lucide-react';
 import { vehiclesApi } from '../services/api';
 import StatusBadge from './StatusBadge';
@@ -10,7 +10,7 @@ export default function QRScanner({ onVehicleFound, embedded = false }) {
   const [foundVehicle, setFoundVehicle] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
-  const sampleQrs = ['VN-EV-001', 'VN-EV-002', 'VN-EV-003', 'VN-EV-004', 'VN-EV-008'];
+  const sampleQrs = ['VL-EV-001', 'VL-EV-002', 'VL-EV-003', 'VL-EV-004', 'VL-EV-008'];
 
   const handleLookup = async (codeToLookup) => {
     const code = (codeToLookup || qrCode || '').trim().toUpperCase();
@@ -45,7 +45,7 @@ export default function QRScanner({ onVehicleFound, embedded = false }) {
     // If turning on camera, we can auto-simulate scan after 2 seconds for viva convenience
     if (!isCameraActive) {
       setTimeout(() => {
-        handleSelectSample('VN-EV-002');
+        handleSelectSample('VL-EV-002');
       }, 2200);
     }
   };
@@ -59,7 +59,7 @@ export default function QRScanner({ onVehicleFound, embedded = false }) {
           </div>
           <div>
             <h3 className="text-base font-semibold text-white">QR Code Identification</h3>
-            <p className="text-xs text-slate-400">Scan or enter EV identifier (e.g. VN-EV-001)</p>
+            <p className="text-xs text-slate-400">Scan or enter EV identifier (e.g. VL-EV-001)</p>
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export default function QRScanner({ onVehicleFound, embedded = false }) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Enter QR Identifier (e.g. VN-EV-001)"
+              placeholder="Enter QR Identifier (e.g. VL-EV-001)"
               value={qrCode}
               onChange={(e) => setQrCode(e.target.value.toUpperCase())}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono uppercase"

@@ -1,6 +1,6 @@
-# VoltNexus — Smart Charging Allocation Engine & QR Workflow Specification
+# VoltLoop — Smart Charging Allocation Engine & QR Workflow Specification
 
-This document details the mathematical models, algorithmic rules, architectural workflows, and database transaction designs implemented in **Phase 4** of **VoltNexus — Smart Campus EV Fleet & Energy Management System**.
+This document details the mathematical models, algorithmic rules, architectural workflows, and database transaction designs implemented in **Phase 4** of **VoltLoop — Smart Campus EV Fleet & Energy Management System**.
 
 ---
 
@@ -12,7 +12,7 @@ In traditional campus EV charging systems, drivers manually choose any available
 - **Connector Incompatibility Bottlenecks**: Drivers attempt to plug vehicles into incompatible ports or unsupported power topologies.
 - **Reservation Schedule Collisions**: Unmanaged advance bookings result in double-booking conflicts on the same station bay.
 
-**VoltNexus Smart Allocation** replaces ad-hoc manual bay selection with a deterministic, multi-factor decision engine that evaluates battery level, battery capacity, connector compatibility, station power rating, reservation schedules, and waiting time.
+**VoltLoop Smart Allocation** replaces ad-hoc manual bay selection with a deterministic, multi-factor decision engine that evaluates battery level, battery capacity, connector compatibility, station power rating, reservation schedules, and waiting time.
 
 ---
 
@@ -77,7 +77,7 @@ POST /api/charging/reserve      POST /api/charging/start
 
 ## 3. QR Identification Workflow
 
-Every campus EV has a unique `qr_identifier` (e.g., `VN-EV-001`, `VN-EV-002`) stored in the `vehicles` table:
+Every campus EV has a unique `qr_identifier` (e.g., `VL-EV-001`, `VL-EV-002`) stored in the `vehicles` table:
 
 1. The driver scans the QR code using the client application.
 2. The client calls:
@@ -124,14 +124,14 @@ $$\text{Waiting Score} = \min\left(50, \left\lfloor \frac{\text{Waiting Minutes}
 ## 5. Station Selection & Connector Compatibility Logic
 
 ### Connector Compatibility Matrix
-VoltNexus enforces strict hardware compatibility matching:
+VoltLoop enforces strict hardware compatibility matching:
 
 | Vehicle Class | Example Campus Models | Compatible Connectors | Incompatible Connectors |
 |---|---|---|---|
-| **2-Wheeler** | e-Scooters (`VN-EV-001`), e-Motorbikes (`VN-EV-005`) | `Type 2` (AC), `Standard 15A Socket` | `CCS2` (DC Fast) |
-| **4-Wheeler** | Compact EVs (`VN-EV-002`), Sedan EVs (`VN-EV-003`), SUVs (`VN-EV-007`) | `CCS2` (DC Fast), `Type 2` (AC Level 2) | `Standard 15A Socket` |
-| **Fleet Transit** | Campus Shuttle Bus (`VN-EV-004`), Delivery Vans (`VN-EV-008`) | `CCS2` (DC Fast High Power), `Type 2` | `Standard 15A Socket` |
-| **Utility Cart** | Maintenance Cart (`VN-EV-006`) | `Standard 15A Socket`, `Type 2` | `CCS2` |
+| **2-Wheeler** | e-Scooters (`VL-EV-001`), e-Motorbikes (`VL-EV-005`) | `Type 2` (AC), `Standard 15A Socket` | `CCS2` (DC Fast) |
+| **4-Wheeler** | Compact EVs (`VL-EV-002`), Sedan EVs (`VL-EV-003`), SUVs (`VL-EV-007`) | `CCS2` (DC Fast), `Type 2` (AC Level 2) | `Standard 15A Socket` |
+| **Fleet Transit** | Campus Shuttle Bus (`VL-EV-004`), Delivery Vans (`VL-EV-008`) | `CCS2` (DC Fast High Power), `Type 2` | `Standard 15A Socket` |
+| **Utility Cart** | Maintenance Cart (`VL-EV-006`) | `Standard 15A Socket`, `Type 2` | `CCS2` |
 
 ### Station Ranking Algorithm
 Among eligible stations:
@@ -184,7 +184,7 @@ If this query returns $\ge 1$ matching rows, the booking is rejected immediately
 
 ## 8. JDBC Transaction Safety (`ACID`)
 
-VoltNexus uses explicit, low-level JDBC transaction control to guarantee atomic state transitions:
+VoltLoop uses explicit, low-level JDBC transaction control to guarantee atomic state transitions:
 
 ```java
 try (Connection conn = dataSource.getConnection()) {

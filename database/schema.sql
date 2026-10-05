@@ -1,12 +1,12 @@
 -- =============================================================================
--- VoltNexus: Smart Campus EV Fleet & Energy Management System
+-- VoltLoop: Smart Campus EV Fleet & Energy Management System
 -- Phase 2: Relational Database Schema Definition
--- Database: voltnexus
+-- Database: voltloop
 -- Target Engine: MySQL 8.0+
 -- =============================================================================
 
-CREATE DATABASE IF NOT EXISTS voltnexus;
-USE voltnexus;
+CREATE DATABASE IF NOT EXISTS voltloop;
+USE voltloop;
 
 -- Safely teardown existing tables if re-initializing
 SET FOREIGN_KEY_CHECKS = 0;

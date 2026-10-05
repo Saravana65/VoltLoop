@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Plus, Search, Battery, ExternalLink, RefreshCw, X, Check, Edit2 } from 'lucide-react';
 import { vehiclesApi, usersApi } from '../services/api';
@@ -77,7 +77,7 @@ export default function Vehicles() {
         registrationNo: formData.registrationNo.trim().toUpperCase(),
         batteryCapacity: Number(formData.batteryCapacity),
         currentBattery: Number(formData.currentBattery),
-        qrIdentifier: (formData.qrIdentifier || `VN-EV-${Date.now().toString().slice(-3)}`).trim().toUpperCase(),
+        qrIdentifier: (formData.qrIdentifier || `VL-EV-${Date.now().toString().slice(-3)}`).trim().toUpperCase(),
       });
       setIsRegisterOpen(false);
       setFormData({
@@ -348,7 +348,7 @@ export default function Vehicles() {
                 <label className="block font-medium text-slate-300">Custom QR Identifier (Optional)</label>
                 <input
                   type="text"
-                  placeholder="Auto-generated if empty (e.g. VN-EV-099)"
+                  placeholder="Auto-generated if empty (e.g. VL-EV-099)"
                   value={formData.qrIdentifier}
                   onChange={(e) => setFormData({ ...formData, qrIdentifier: e.target.value.toUpperCase() })}
                   className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"

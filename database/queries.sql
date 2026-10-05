@@ -1,10 +1,10 @@
 -- =============================================================================
--- VoltNexus: Smart Campus EV Fleet & Energy Management System
+-- VoltLoop: Smart Campus EV Fleet & Energy Management System
 -- Phase 2: Essential SQL Queries for Demonstration & Viva
--- Database: voltnexus
+-- Database: voltloop
 -- =============================================================================
 
-USE voltnexus;
+USE voltloop;
 
 -- -----------------------------------------------------------------------------
 -- Query 1: Display all registered EVs with driver details
@@ -42,7 +42,7 @@ SELECT
     u.email AS driver_email
 FROM vehicles v
 JOIN users u ON v.user_id = u.user_id
-WHERE v.qr_identifier = 'VN-EV-001';
+WHERE v.qr_identifier = 'VL-EV-001';
 
 
 -- -----------------------------------------------------------------------------
