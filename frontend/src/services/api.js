@@ -171,7 +171,9 @@ export const stationsApi = {
   getAll: getStations,
   getAvailable: getAvailableStations,
   getById: getStationById,
+  create: createStation,
   register: createStation,
+  updateStatus: updateStationStatus,
   toggleStatus: updateStationStatus,
 };
 
@@ -193,6 +195,8 @@ export const sessionsApi = {
 export const smartChargingApi = {
   recommend: getSmartChargingRecommendation,
   getRecommendations: getRecommendedStationForVehicle,
+  getHistory: (vehicleId) => request(`/charging/history/${vehicleId}`),
+  getActive: getActiveChargingSessions,
   start: startCharging,
   complete: completeCharging,
   reserve: createReservation,
