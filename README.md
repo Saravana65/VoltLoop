@@ -24,17 +24,17 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 4. **Charging Slot Conflict Detection**: Prevents overlapping reservations on the same bay via interval collision detection.
 5. **Real-Time Charging Session Management**: Captures initial battery, dynamic charging states, and timestamps.
 6. **Energy Consumption Tracking**: Calculates energy dispensed in kilowatt-hours (kWh) per session.
-7. **Charging Cost Calculation**: Automatically reconciles billing based on kWh delivered.
+7. **Charging Cost Calculation**: Automatically reconciles billing based on kWh delivered (₹15.00/kWh).
 8. **EV Usage History**: Auditing of charging logs per vehicle.
 9. **Station Utilization Analytics**: Measures usage frequency and energy throughput across campus stations.
 10. **Role-Based Users**: Administrator, Fleet Operator, and Driver stakeholders.
-11. **Admin & Live Dashboard**: Real-time fleet and bay monitoring.
+11. **Admin & Live Dashboard**: Real-time fleet and bay monitoring via responsive React frontend.
 
 ---
 
 ## 3. Technology Stack
 
-- **Frontend**: React.js (Planned for Phase 4)
+- **Frontend**: React 18, Vite, React Router v6, Tailwind CSS, Lucide React
 - **Backend**: Java 17 + Spring Boot REST API
 - **Database Connectivity**: Pure JDBC (`PreparedStatement`, `JdbcTemplate`, `HikariCP`)
 - **Database**: MySQL 8.0 (Relational schema with primary/foreign keys, CHECK constraints, indexes)
@@ -49,13 +49,15 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 ┌────────────────────────────────────────────────────────┐
 │               React.js Frontend (Vite)                │
 │    (QR Scanner UI, Fleet Dashboard, Station Boards)    │
+│    Runs on: http://localhost:5173                      │
 └───────────────────────────┬────────────────────────────┘
-                            │  HTTP / JSON REST API
+                            │  HTTP / JSON REST API (Vite Proxy)
 ┌───────────────────────────▼────────────────────────────┐
 │                  Java Backend Layer                    │
-│    - Spring Boot REST Controllers                      │
+│    - Spring Boot 3.2 REST Controllers                  │
 │    - Business Logic & Conflict Detection Services      │
 │    - Transaction Management (@Transactional)           │
+│    Runs on: http://localhost:8080                      │
 └───────────────────────────┬────────────────────────────┘
                             │  Pure JDBC & PreparedStatement
 ┌───────────────────────────▼────────────────────────────┐
@@ -83,17 +85,15 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 
 ## 5. Development Phases & Current Status
 
-| Phase | Milestone | Status | Description |
-|---|---|---|---|
-| **Phase 1** | Project Structure & Tooling | **Complete** | Scaffolding directories, Docker Compose setup, and architecture documentation. |
-| **Phase 2** | Relational Database & Seed Data | **Complete** | 5 core tables, relational schema, CHECK constraints, realistic seed dataset, 15 analytical queries. |
-| **Phase 3** | Java Backend + JDBC Connectivity | **Complete** | Spring Boot REST API, JDBC repositories with `PreparedStatement`, QR identification endpoint, session lifecycle, and unit tests. |
-| **Phase 4** | Smart Charging Allocation Engine & QR Workflow | **Complete** | Rule-based priority scoring, charger compatibility matrix, slot overlap conflict detection, pure JDBC transaction control, and session energy/cost auditing. |
-| **Phase 5** | React Frontend & Dashboard UI | **Complete** | Modern React 18 + Vite frontend, responsive dark fleet dashboard, QR identification UI, smart allocation recommendation page, and centralized API layer. |
+- **PHASE 1 — COMPLETE**: Project scaffolding, Docker configuration, database schema, and architecture documentation.
+- **PHASE 2 — COMPLETE**: Relational database, realistic seed dataset, CHECK constraints, and 15 analytical SQL queries.
+- **PHASE 3 — COMPLETE**: Java Spring Boot backend, pure JDBC repositories, QR identification endpoint, session lifecycle, and unit test suite.
+- **PHASE 4 — COMPLETE**: Rule-based smart charging allocation engine, multi-factor priority scoring, charger compatibility matrix, slot overlap conflict detection, and session energy/cost auditing.
+- **PHASE 5 — COMPLETE**: React 18 + Vite frontend, responsive dark fleet dashboard, QR identification UI, interactive smart allocation engine, slot reservations with HTTP 409 conflict alerts, live charging session billing, fleet analytics charts, and centralized API service layer.
 
 ---
 
-## 6. Smart Charging Allocation Engine (Phase 4)
+## 6. Smart Charging Allocation Engine
 
 VoltLoop incorporates an explainable, deterministic rule-based allocation engine designed for real-world campus EV fleets without opaque AI black-boxes.
 
@@ -124,90 +124,54 @@ VoltLoop incorporates an explainable, deterministic rule-based allocation engine
 
 ---
 
-## 7. Phase 4 Smart Allocation REST API Endpoints
+## 7. REST API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/charging/recommend` | Evaluates priority, filters compatible stations, calculates energy/duration, and returns best station. |
-| `GET` | `/api/charging/stations/recommended/{vehicleId}` | Quick recommendation by EV ID. |
-| `POST` | `/api/charging/reserve` | Books a charging bay reservation with interval conflict detection (returns `409` on overlap). |
-| `POST` | `/api/charging/start` | Transactionally activates charging session, sets EV to `CHARGING`, and bay to `OCCUPIED`. |
-| `POST` | `/api/charging/complete` | Concludes session, calculates kWh delivered & cost, updates battery, and releases bay to `AVAILABLE`. |
-| `GET` | `/api/charging/history/{vehicleId}` | Retrieves all completed and active charging sessions for an EV. |
-| `GET` | `/api/charging/active` | Real-time list of all active charging sessions across campus. |
+| `GET` | `/api/vehicles` | List all registered electric vehicles. |
+| `GET` | `/api/vehicles/{id}` | Get vehicle details and battery specifications. |
+| `GET` | `/api/vehicles/qr/{qrIdentifier}` | Look up EV by unique QR identifier (e.g. `VL-EV-001`). |
+| `POST` | `/api/vehicles` | Register a new EV. |
+| `PUT` | `/api/vehicles/{id}/battery` | Update current battery SoC. |
+| `GET` | `/api/stations` | List all campus charging stations. |
+| `GET` | `/api/stations/available` | List stations currently available. |
+| `POST` | `/api/stations` | Add a new charging bay. |
+| `PUT` | `/api/stations/{id}/status` | Update station status (`AVAILABLE`, `MAINTENANCE`). |
+| `GET` | `/api/reservations` | List all slot reservations. |
+| `POST` | `/api/charging/reserve` | Book a bay slot with interval conflict check (returns `409` on collision). |
+| `PUT` | `/api/reservations/{id}/cancel` | Cancel an existing reservation. |
+| `GET` | `/api/sessions` | List all charging sessions. |
+| `GET` | `/api/sessions/active` | List currently active charging sessions. |
+| `POST` | `/api/charging/start` | Transactionally start charging session. |
+| `POST` | `/api/charging/complete` | Complete session, calculate kWh & cost (₹), update battery, release bay. |
+| `POST` | `/api/charging/recommend` | Rule-based smart station recommendation. |
+| `GET` | `/api/analytics` | Aggregated fleet energy consumption, session duration, and station utilization. |
+| `GET` | `/api/analytics/summary` | Summary KPIs for dashboard cards. |
 
 ---
 
-## 8. Quick Start Guide
+## 8. Running the Complete Application
 
-### Step 1: Database Setup (Docker or Local MySQL)
-VoltLoop works seamlessly with either Docker or native MySQL 8.0:
+### 1. Database (Docker or Native MySQL)
+```bash
+# Using Docker:
+docker compose up -d
 
-- **Option A (Docker):**
-  ```bash
-  docker compose up -d
-  ```
-- **Option B (Native Windows MySQL):**
-  Connect to `localhost:3306` with credentials `voltloop_user / voltloop_pass` or root.
+# Or verify native MySQL is running on localhost:3306
+```
 
-### Step 2: Start the Java Backend
+### 2. Java Spring Boot Backend
 ```bash
 cd backend
 mvn clean test
 mvn spring-boot:run
 ```
-The REST API will boot on `http://localhost:8080`.
+Backend will boot at: **`http://localhost:8080`**
 
-### Step 3: Test Key Endpoints
-
-- **Identify Vehicle by QR Code:**
-  ```bash
-  curl http://localhost:8080/api/vehicles/qr/VL-EV-001
-  ```
-- **Get Smart Station Recommendation for EV 2:**
-  ```bash
-  curl -X POST http://localhost:8080/api/charging/recommend \
-    -H "Content-Type: application/json" \
-    -d "{\"vehicleId\": 2, \"targetBatteryPercentage\": 80.0}"
-  ```
-- **List Active Charging Sessions Across Campus:**
-  ```bash
-  curl http://localhost:8080/api/charging/active
-  ```
-
----
-
-## 7. QR Identification & Charging Lifecycle Flow
-
+### 3. React Frontend
+```bash
+cd frontend
+npm install
+npm run dev
 ```
-[ Driver Scans QR Code on EV ]
-              │
-              ▼
-GET /api/vehicles/qr/{qrIdentifier}
-              │
-              ▼
-[ Backend Performs Indexed O(1) JDBC Query ]
-              │
-              ▼
-[ Returns: Registration, Battery %, Capacity, Owner Info ]
-              │
-              ▼
-[ Driver Selects Available Station Bay ]
-              │
-              ▼
-POST /api/sessions/start
-              │
-              ▼
-[ Backend Validates: Vehicle NOT already charging ]
-[ Updates EV status -> 'CHARGING', Station -> 'OCCUPIED' ]
-              │
-              ▼
-[ Power Dispensing Underway ]
-              │
-              ▼
-PUT /api/sessions/{id}/complete
-              │
-              ▼
-[ Computes kWh Consumed & Cost ]
-[ Updates EV status -> 'ACTIVE', Battery -> 100%, Station -> 'AVAILABLE' ]
-```
+Frontend will be accessible at: **`http://localhost:5173`**

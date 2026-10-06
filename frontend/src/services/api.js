@@ -1,12 +1,16 @@
-﻿/**
+/**
  * VoltLoop Centralized API Service Layer
- * Connects React frontend directly to the Spring Boot REST API
+ * Connects React frontend directly to the Spring Boot REST API.
+ * Uses environment configuration (VITE_API_BASE_URL) with fallback to proxy `/api`.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  '/api';
 
 /**
- * Standardized Fetch Client
+ * Standardized Fetch Client with structured HTTP status parsing
  */
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
@@ -40,9 +44,13 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    if (error.name === 'TypeError' || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+    if (
+      error.name === 'TypeError' ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError')
+    ) {
       const networkErr = new Error(
-        'Unable to connect to VoltLoop server. Please make sure the Java backend is running on port 8080.'
+        'Unable to connect to VoltLoop server. Please verify the Java backend is active on port 8080.'
       );
       networkErr.status = 503;
       throw networkErr;
@@ -52,121 +60,174 @@ async function request(endpoint, options = {}) {
 }
 
 // ==========================================
-// 1. Vehicles API
+// Standalone Named Functions (as specified in Section 19)
 // ==========================================
-export const vehiclesApi = {
-  getAll: () => request('/vehicles'),
-  getById: (id) => request(`/vehicles/${id}`),
-  getByQr: (qrIdentifier) => request(`/vehicles/qr/${encodeURIComponent(qrIdentifier)}`),
-  register: (vehicleData) => request('/vehicles', {
-    method: 'POST',
-    body: JSON.stringify(vehicleData),
-  }),
-  updateBattery: (id, currentBattery) => request(`/vehicles/${id}/battery`, {
-    method: 'PUT',
-    body: JSON.stringify({ currentBattery: Number(currentBattery) }),
-  }),
-  updateStatus: (id, status) => request(`/vehicles/${id}/status`, {
-    method: 'PUT',
-    body: JSON.stringify({ status }),
-  }),
-};
 
-// ==========================================
-// 2. Charging Stations API
-// ==========================================
-export const stationsApi = {
-  getAll: () => request('/stations'),
-  getAvailable: () => request('/stations/available'),
-  getById: (id) => request(`/stations/${id}`),
-  create: (stationData) => request('/stations', {
+export const getVehicles = () => request('/vehicles');
+export const getVehicleById = (id) => request(`/vehicles/${id}`);
+export const getVehicleByQR = (qrIdentifier) =>
+  request(`/vehicles/qr/${encodeURIComponent(qrIdentifier)}`);
+export const createVehicle = (data) =>
+  request('/vehicles', {
     method: 'POST',
-    body: JSON.stringify(stationData),
-  }),
-  updateStatus: (id, status) => request(`/stations/${id}/status`, {
+    body: JSON.stringify(data),
+  });
+export const updateVehicleBattery = (id, battery) =>
+  request(`/vehicles/${id}/battery`, {
+    method: 'PUT',
+    body: JSON.stringify({ currentBattery: battery }),
+  });
+
+export const getStations = () => request('/stations');
+export const getAvailableStations = () => request('/stations/available');
+export const getStationById = (id) => request(`/stations/${id}`);
+export const createStation = (data) =>
+  request('/stations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const updateStationStatus = (id, status) =>
+  request(`/stations/${id}/status`, {
     method: 'PUT',
     body: JSON.stringify({ status }),
-  }),
-};
+  });
 
-// ==========================================
-// 3. Slot Reservations API
-// ==========================================
-export const reservationsApi = {
-  getAll: () => request('/reservations'),
-  getById: (id) => request(`/reservations/${id}`),
-  create: (reservationData) => request('/reservations', {
+export const getReservations = () => request('/reservations');
+export const getReservationById = (id) => request(`/reservations/${id}`);
+export const createReservation = (data) =>
+  request('/charging/reserve', {
     method: 'POST',
-    body: JSON.stringify(reservationData),
-  }),
-  cancel: (id) => request(`/reservations/${id}/cancel`, {
+    body: JSON.stringify(data),
+  });
+export const cancelReservation = (id) =>
+  request(`/reservations/${id}/cancel`, {
     method: 'PUT',
-  }),
-};
+  });
 
-// ==========================================
-// 4. Charging Sessions API
-// ==========================================
-export const sessionsApi = {
-  getAll: () => request('/sessions'),
-  getActive: () => request('/sessions/active'),
-  getById: (id) => request(`/sessions/${id}`),
-  getByVehicleId: (vehicleId) => request(`/sessions/vehicle/${vehicleId}`),
-  start: (sessionData) => request('/sessions/start', {
+export const getChargingSessions = () => request('/sessions');
+export const getActiveChargingSessions = () => request('/sessions/active');
+export const getVehicleChargingSessions = (vehicleId) =>
+  request(`/sessions/vehicle/${vehicleId}`);
+export const startCharging = (data) =>
+  request('/charging/start', {
     method: 'POST',
-    body: JSON.stringify(sessionData),
-  }),
-  complete: (id, payload) => request(`/sessions/${id}/complete`, {
-    method: 'PUT',
-    body: JSON.stringify(payload || {}),
-  }),
-};
+    body: JSON.stringify(data),
+  });
+export const completeCharging = (data) =>
+  request('/charging/complete', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 
-// ==========================================
-// 5. Smart Charging Allocation Engine API
-// ==========================================
-export const smartChargingApi = {
-  recommend: (payload) => request('/charging/recommend', {
+export const getSmartChargingRecommendation = (data) =>
+  request('/charging/recommend', {
     method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-  getRecommendedForVehicle: (vehicleId) => request(`/charging/stations/recommended/${vehicleId}`),
-  reserve: (payload) => request('/charging/reserve', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-  start: (payload) => request('/charging/start', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-  complete: (payload) => request('/charging/complete', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-  getActiveSessions: () => request('/charging/active'),
-  getHistory: (vehicleId) => request(`/charging/history/${vehicleId}`),
-};
+    body: JSON.stringify(data),
+  });
+export const getRecommendedStationForVehicle = (vehicleId) =>
+  request(`/charging/stations/recommended/${vehicleId}`);
 
-// ==========================================
-// 6. Users API
-// ==========================================
-export const usersApi = {
-  getAll: () => request('/users'),
-  getById: (id) => request(`/users/${id}`),
-  create: (userData) => request('/users', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-  }),
-};
+export const getAnalytics = () => request('/analytics');
 
-// ==========================================
-// 7. System Health Check
-// ==========================================
-export const checkBackendHealth = async () => {
+export const getDashboard = async () => {
   try {
-    await vehiclesApi.getAll();
-    return true;
-  } catch (e) {
-    return false;
+    return await request('/analytics/summary');
+  } catch (err) {
+    // Graceful fallback to multi-endpoint aggregation
+    const [vehicles, stations, sessions, active] = await Promise.all([
+      getVehicles(),
+      getStations(),
+      getChargingSessions(),
+      getActiveChargingSessions(),
+    ]);
+    const totalEnergy = sessions.reduce((acc, s) => acc + (Number(s.energyConsumed) || 0), 0);
+    const totalCost = sessions.reduce((acc, s) => acc + (Number(s.chargingCost) || 0), 0);
+    return {
+      totalVehicles: vehicles.length,
+      availableStations: stations.filter((s) => s.status === 'AVAILABLE').length,
+      activeSessionsCount: active.length,
+      totalChargingSessions: sessions.length,
+      totalEnergyConsumed: Math.round(totalEnergy * 100) / 100,
+      totalChargingCost: Math.round(totalCost * 100) / 100,
+    };
   }
+};
+
+export const getUsers = () => request('/users');
+
+// ==========================================
+// Namespaced Objects for API Consistency
+// ==========================================
+
+export const vehiclesApi = {
+  getAll: getVehicles,
+  getById: getVehicleById,
+  getByQr: getVehicleByQR,
+  register: createVehicle,
+  updateBattery: updateVehicleBattery,
+};
+
+export const stationsApi = {
+  getAll: getStations,
+  getAvailable: getAvailableStations,
+  getById: getStationById,
+  register: createStation,
+  toggleStatus: updateStationStatus,
+};
+
+export const reservationsApi = {
+  getAll: getReservations,
+  getById: getReservationById,
+  create: createReservation,
+  cancel: cancelReservation,
+};
+
+export const sessionsApi = {
+  getAll: getChargingSessions,
+  getActive: getActiveChargingSessions,
+  getByVehicle: getVehicleChargingSessions,
+  start: startCharging,
+  complete: completeCharging,
+};
+
+export const smartChargingApi = {
+  recommend: getSmartChargingRecommendation,
+  getRecommendations: getRecommendedStationForVehicle,
+  start: startCharging,
+  complete: completeCharging,
+  reserve: createReservation,
+};
+
+export const analyticsApi = {
+  getSummary: getAnalytics,
+  getDashboard: getDashboard,
+};
+
+export const usersApi = {
+  getAll: getUsers,
+};
+
+export default {
+  getDashboard,
+  getVehicles,
+  getVehicleById,
+  getVehicleByQR,
+  createVehicle,
+  getStations,
+  getReservations,
+  createReservation,
+  cancelReservation,
+  getChargingSessions,
+  getActiveChargingSessions,
+  getSmartChargingRecommendation,
+  startCharging,
+  completeCharging,
+  getAnalytics,
+  vehiclesApi,
+  stationsApi,
+  reservationsApi,
+  sessionsApi,
+  smartChargingApi,
+  analyticsApi,
+  usersApi,
 };
