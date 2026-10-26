@@ -93,4 +93,29 @@ public class SmartChargingController {
     public ResponseEntity<RecommendationResponse> getRecommendedStationForVehicle(@PathVariable("vehicleId") int vehicleId) {
         return ResponseEntity.ok(smartChargingService.getRecommendedStationForVehicle(vehicleId));
     }
+
+    /**
+     * Charging Station Check-In and Authorization.
+     * Metro QR-style pre-charging validation.
+     * Validates EV, station availability, compatibility, and reservation windows.
+     * Does NOT mutate state.
+     * POST /api/charging/check-in
+     */
+    @PostMapping("/check-in")
+    public ResponseEntity<CheckInResponse> checkInStation(
+            @RequestBody CheckInRequest request,
+            @RequestParam(value = "evaluate", defaultValue = "false") boolean evaluate) {
+        CheckInResponse response = smartChargingService.checkIn(request, !evaluate);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Alias endpoint: POST /api/charging/authorize-checkin
+     */
+    @PostMapping("/authorize-checkin")
+    public ResponseEntity<CheckInResponse> authorizeCheckIn(
+            @RequestBody CheckInRequest request,
+            @RequestParam(value = "evaluate", defaultValue = "false") boolean evaluate) {
+        return checkInStation(request, evaluate);
+    }
 }

@@ -135,4 +135,40 @@ class VoltLoopBackendTests {
         assertEquals("CS-ADMIN-01", best.get().getStationName());
         assertEquals(50.0, best.get().getPowerRating());
     }
+
+    @Test
+    @DisplayName("Phase 7: CheckInRequest and CheckInResponse DTO mapping")
+    void testCheckInModels() {
+        CheckInRequest request = new CheckInRequest("VL-EV-001", 1);
+        assertEquals("VL-EV-001", request.getQrIdentifier());
+        assertEquals(1, request.getStationId());
+
+        CheckInResponse response = new CheckInResponse(true, "AUTHORIZED", null, "Eligible to charge");
+        assertTrue(response.isAuthorized());
+        assertEquals("AUTHORIZED", response.getStatus());
+        assertNull(response.getRejectionCode());
+        assertEquals("Eligible to charge", response.getReason());
+        assertNotNull(response.getTimestamp());
+
+        // Rejected response test
+        CheckInResponse rejected = new CheckInResponse(false, "REJECTED", "INCOMPATIBLE_CONNECTOR", "Incompatible charger");
+        assertFalse(rejected.isAuthorized());
+        assertEquals("REJECTED", rejected.getStatus());
+        assertEquals("INCOMPATIBLE_CONNECTOR", rejected.getRejectionCode());
+    }
+
+    @Test
+    @DisplayName("Phase 7: Station check-in compatibility rule validation")
+    void testCheckInConnectorValidation() {
+        // Vehicle 2-Wheeler with Type-2 vs CCS2 station
+        Vehicle scooter = new Vehicle();
+        scooter.setVehicleType("2-Wheeler (e-Scooter)");
+        scooter.setCurrentBattery(40.0);
+
+        ChargingStation ccsStation = new ChargingStation(2, "CS-ADMIN-01", "Admin Bay", "DC Fast", 50.0, "CCS2", "AVAILABLE", LocalDateTime.now());
+        ChargingStation type2Station = new ChargingStation(1, "CS-ENGG-01", "Engg Lot", "AC Level 2", 22.0, "Type 2", "AVAILABLE", LocalDateTime.now());
+
+        assertFalse(allocationEngine.isConnectorCompatible(scooter.getVehicleType(), ccsStation.getConnectorType()));
+        assertTrue(allocationEngine.isConnectorCompatible(scooter.getVehicleType(), type2Station.getConnectorType()));
+    }
 }

@@ -11,6 +11,7 @@ import Reservations from './pages/Reservations';
 import ChargingSessions from './pages/ChargingSessions';
 import SmartCharging from './pages/SmartCharging';
 import Analytics from './pages/Analytics';
+import StationCheckIn from './pages/StationCheckIn';
 import { X } from 'lucide-react';
 
 function AppContent() {
@@ -74,6 +75,10 @@ function AppContent() {
 
             {/* Smart Charging Allocation */}
             <Route path="/smart-charging" element={<SmartCharging />} />
+
+            {/* Station Check-In & Authorization (Phase 7) */}
+            <Route path="/station-checkin" element={<StationCheckIn />} />
+            <Route path="/check-in" element={<StationCheckIn />} />
 
             {/* Fleet Energy Analytics */}
             <Route path="/analytics" element={<Analytics />} />

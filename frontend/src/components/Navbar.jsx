@@ -11,6 +11,8 @@ const titleMap = {
   '/reservations': 'Advance Slot Bookings & Conflict Monitor',
   '/sessions': 'Live Charging Sessions & Billing Ledger',
   '/smart-charging': 'Rule-Based Smart Charging Allocation',
+  '/station-checkin': 'Charging Station Check-In & Authorization',
+  '/check-in': 'Charging Station Check-In & Authorization',
   '/analytics': 'Fleet Energy & Utilization Analytics',
 };
 

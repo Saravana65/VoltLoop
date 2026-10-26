@@ -119,6 +119,13 @@ export const completeCharging = (data) =>
     body: JSON.stringify(data),
   });
 
+export const checkInStation = (data, evaluate = false) =>
+  request(`/charging/check-in${evaluate ? '?evaluate=true' : ''}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const authorizeCheckIn = checkInStation;
+
 export const getSmartChargingRecommendation = (data) =>
   request('/charging/recommend', {
     method: 'POST',
@@ -197,6 +204,8 @@ export const smartChargingApi = {
   getRecommendations: getRecommendedStationForVehicle,
   getHistory: (vehicleId) => request(`/charging/history/${vehicleId}`),
   getActive: getActiveChargingSessions,
+  checkIn: checkInStation,
+  authorizeCheckIn: checkInStation,
   start: startCharging,
   complete: completeCharging,
   reserve: createReservation,

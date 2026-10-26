@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
+  QrCode,
   X,
 } from 'lucide-react';
 import { getStations } from '../services/api';
@@ -22,6 +23,7 @@ const navItems = [
   { name: 'Reservations', path: '/reservations', icon: CalendarClock },
   { name: 'Charging Sessions', path: '/sessions', icon: BatteryCharging },
   { name: 'Smart Charging', path: '/smart-charging', icon: Cpu, badge: 'Rule-Based' },
+  { name: 'Station Check-In', path: '/station-checkin', icon: QrCode, badge: 'Phase 7' },
   { name: 'Analytics', path: '/analytics', icon: BarChart3 },
 ];
 

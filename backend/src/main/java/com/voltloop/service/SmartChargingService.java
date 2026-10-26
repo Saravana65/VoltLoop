@@ -448,4 +448,189 @@ public class SmartChargingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + vehicleId));
         return recommendStation(new RecommendationRequest(vehicle.getQrIdentifier()));
     }
+
+    /**
+     * Charging Station Check-In and Authorization Workflow.
+     * Metro QR-inspired pre-charge validation.
+     * Validates QR existence, EV eligibility, station availability,
+     * charger connector compatibility, active session conflict, and reservation window.
+     * NOTE: Does NOT start charging or modify station/vehicle state.
+     */
+    public CheckInResponse checkIn(CheckInRequest request) {
+        return checkIn(request, true);
+    }
+
+    public CheckInResponse checkIn(CheckInRequest request, boolean throwOnRejection) {
+        if (request == null) {
+            throw new BadRequestException("Check-in request payload is required.");
+        }
+        if ((request.getQrIdentifier() == null || request.getQrIdentifier().trim().isEmpty())
+                && request.getVehicleId() == null) {
+            throw new BadRequestException("Either QR identifier or vehicle ID is required for check-in.");
+        }
+        if (request.getStationId() == null) {
+            throw new BadRequestException("Station ID is required for check-in validation.");
+        }
+
+        // 1. Resolve vehicle
+        Vehicle vehicle;
+        if (request.getQrIdentifier() != null && !request.getQrIdentifier().trim().isEmpty()) {
+            String cleanQr = request.getQrIdentifier().trim().toUpperCase();
+            Optional<Vehicle> vOpt = vehicleRepository.findVehicleByQrIdentifier(cleanQr);
+            if (vOpt.isEmpty()) {
+                if (throwOnRejection) {
+                    throw new ResourceNotFoundException("No registered EV found with QR identifier: " + cleanQr);
+                }
+                return new CheckInResponse(false, "REJECTED", "INVALID_QR", "No registered EV found with QR identifier: " + cleanQr);
+            }
+            vehicle = vOpt.get();
+        } else {
+            Optional<Vehicle> vOpt = vehicleRepository.getVehicleById(request.getVehicleId());
+            if (vOpt.isEmpty()) {
+                if (throwOnRejection) {
+                    throw new ResourceNotFoundException("No registered EV found with ID: " + request.getVehicleId());
+                }
+                return new CheckInResponse(false, "REJECTED", "INVALID_QR", "No registered EV found with ID: " + request.getVehicleId());
+            }
+            vehicle = vOpt.get();
+        }
+
+        // 2. Validate EV status (must not be INACTIVE)
+        if ("INACTIVE".equalsIgnoreCase(vehicle.getStatus())) {
+            String reason = String.format("Vehicle '%s' is currently marked INACTIVE and is not eligible for campus charging.", vehicle.getRegistrationNo());
+            if (throwOnRejection) {
+                throw new BadRequestException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "INACTIVE_VEHICLE", reason);
+            resp.setVehicle(vehicle);
+            return resp;
+        }
+
+        // 3. Validate EV is not already charging
+        if ("CHARGING".equalsIgnoreCase(vehicle.getStatus())) {
+            String reason = String.format("Vehicle '%s' is already actively charging.", vehicle.getRegistrationNo());
+            if (throwOnRejection) {
+                throw new ConflictException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "ALREADY_CHARGING", reason);
+            resp.setVehicle(vehicle);
+            return resp;
+        }
+        Optional<ChargingSession> activeSession = sessionRepository.findActiveSessionByVehicleId(vehicle.getVehicleId());
+        if (activeSession.isPresent()) {
+            String reason = String.format("Vehicle '%s' already has an ongoing active charging session (#%d).",
+                    vehicle.getRegistrationNo(), activeSession.get().getSessionId());
+            if (throwOnRejection) {
+                throw new ConflictException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "ALREADY_CHARGING", reason);
+            resp.setVehicle(vehicle);
+            return resp;
+        }
+
+        // 4. Resolve Station
+        Optional<ChargingStation> stOpt = stationRepository.getStationById(request.getStationId());
+        if (stOpt.isEmpty()) {
+            if (throwOnRejection) {
+                throw new ResourceNotFoundException("Charging station not found with ID: " + request.getStationId());
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "STATION_NOT_FOUND", "Charging station not found with ID: " + request.getStationId());
+            resp.setVehicle(vehicle);
+            return resp;
+        }
+        ChargingStation station = stOpt.get();
+
+        // 5. Validate Station Operational Status
+        if ("MAINTENANCE".equalsIgnoreCase(station.getStatus())) {
+            String reason = String.format("Charging station '%s' is currently in MAINTENANCE and offline.", station.getStationName());
+            if (throwOnRejection) {
+                throw new ConflictException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "STATION_MAINTENANCE", reason);
+            resp.setVehicle(vehicle);
+            resp.setStation(station);
+            return resp;
+        }
+        if (!"AVAILABLE".equalsIgnoreCase(station.getStatus())) {
+            String reason = String.format("Charging station '%s' is currently %s and cannot accept new check-ins.", station.getStationName(), station.getStatus());
+            if (throwOnRejection) {
+                throw new ConflictException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "STATION_UNAVAILABLE", reason);
+            resp.setVehicle(vehicle);
+            resp.setStation(station);
+            return resp;
+        }
+
+        // 6. Validate Connector Compatibility
+        boolean compatible = allocationEngine.isConnectorCompatible(vehicle.getVehicleType(), station.getConnectorType());
+        if (!compatible) {
+            String reason = String.format("Incompatible connector: Station '%s' uses %s, which is not compatible with vehicle '%s' (%s).",
+                    station.getStationName(), station.getConnectorType(), vehicle.getRegistrationNo(), vehicle.getVehicleType());
+            if (throwOnRejection) {
+                throw new BadRequestException(reason);
+            }
+            CheckInResponse resp = new CheckInResponse(false, "REJECTED", "INCOMPATIBLE_CONNECTOR", reason);
+            resp.setVehicle(vehicle);
+            resp.setStation(station);
+            resp.setConnectorCompatible(false);
+            return resp;
+        }
+
+        // 7. Validate Reservation Rules & Time Window
+        LocalDateTime now = LocalDateTime.now();
+        List<ChargingReservation> activeReservations = reservationRepository.findOverlappingReservations(
+                station.getStationId(), now.minusMinutes(1), now.plusMinutes(5)
+        );
+
+        ChargingReservation matchedReservation = null;
+        if (!activeReservations.isEmpty()) {
+            boolean reservedByThisVehicle = false;
+            for (ChargingReservation r : activeReservations) {
+                if (r.getVehicleId() == vehicle.getVehicleId()) {
+                    reservedByThisVehicle = true;
+                    matchedReservation = r;
+                    break;
+                }
+            }
+            if (!reservedByThisVehicle) {
+                ChargingReservation otherRes = activeReservations.get(0);
+                String reason = String.format("Station '%s' is currently reserved by another vehicle (%s) from %s to %s.",
+                        station.getStationName(),
+                        otherRes.getRegistrationNo() != null ? otherRes.getRegistrationNo() : "EV #" + otherRes.getVehicleId(),
+                        otherRes.getStartTime(),
+                        otherRes.getEndTime());
+                if (throwOnRejection) {
+                    throw new ConflictException(reason);
+                }
+                CheckInResponse resp = new CheckInResponse(false, "REJECTED", "RESERVATION_CONFLICT", reason);
+                resp.setVehicle(vehicle);
+                resp.setStation(station);
+                resp.setReservation(otherRes);
+                resp.setConnectorCompatible(true);
+                return resp;
+            }
+        }
+
+        // 8. ALL VALIDATIONS PASSED -> AUTHORIZED!
+        CheckInResponse response = new CheckInResponse();
+        response.setAuthorized(true);
+        response.setStatus("AUTHORIZED");
+        response.setRejectionCode(null);
+        response.setVehicle(vehicle);
+        response.setStation(station);
+        response.setReservation(matchedReservation);
+        response.setConnectorCompatible(true);
+
+        if (matchedReservation != null) {
+            response.setReason(String.format("Authorization granted: Vehicle %s matched advance reservation #%d at %s. You may now plug in to start charging.",
+                    vehicle.getRegistrationNo(), matchedReservation.getReservationId(), station.getStationName()));
+        } else {
+            response.setReason(String.format("Authorization granted: Vehicle %s is eligible for on-demand charging at %s (%s, %.1f kW). You may now plug in to start charging.",
+                    vehicle.getRegistrationNo(), station.getStationName(), station.getChargerType(), station.getPowerRating()));
+        }
+
+        logger.info("Check-in authorized for vehicle {} at station {}", vehicle.getRegistrationNo(), station.getStationName());
+        return response;
+    }
 }

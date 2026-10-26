@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Car, Zap, ArrowLeft, Battery, QrCode, Clock, Shield, RefreshCw } from 'lucide-react';
 import { vehiclesApi, smartChargingApi } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import EVQRPass from '../components/EVQRPass';
 import { formatCurrency, formatEnergy, formatDate, getBatteryColor } from '../utils/formatters';
 
 export default function VehicleDetails() {
@@ -139,6 +140,9 @@ export default function VehicleDetails() {
           </div>
         </div>
       </div>
+
+      {/* Official Digital EV Charging Pass */}
+      <EVQRPass vehicle={vehicle} />
 
       {/* Charging History Table */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">

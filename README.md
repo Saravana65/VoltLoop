@@ -91,6 +91,7 @@ With the rapid adoption of electric two-wheelers, faculty electric cars, and cam
 - **PHASE 4 — COMPLETE**: Rule-based smart charging allocation engine, multi-factor priority scoring, charger compatibility matrix, slot overlap conflict detection, and session energy/cost auditing.
 - **PHASE 5 — COMPLETE**: React 18 + Vite frontend, responsive dark fleet dashboard, QR identification UI, interactive smart allocation engine, slot reservations with HTTP 409 conflict alerts, live charging session billing, fleet analytics charts, and centralized API service layer.
 - **PHASE 6 — COMPLETE**: Full system integration audit, JDBC transaction rollback verification, 26-step automated demo workflow verification, edge case testing, and live prototype demonstration readiness.
+- **PHASE 7 — COMPLETE**: QR-based charging station check-in & authorization workflow inspired by metro transit turnstiles. Client-side digital EV QR Pass with high-density 2D QR generation, dedicated station check-in terminal with camera scanner (`html5-qrcode`) and manual fallback, pure read-only authorization backend (`POST /api/charging/check-in`) verifying 7 business rules with zero premature database mutations, and explicit start charging action.
 
 ---
 
@@ -143,6 +144,8 @@ VoltLoop incorporates an explainable, deterministic rule-based allocation engine
 | `PUT` | `/api/reservations/{id}/cancel` | Cancel an existing reservation. |
 | `GET` | `/api/sessions` | List all charging sessions. |
 | `GET` | `/api/sessions/active` | List currently active charging sessions. |
+| `POST` | `/api/charging/check-in` | **Phase 7 Check-In Authorization**: Validate EV QR at station bay across 7 business rules (Pure read-only). |
+| `POST` | `/api/charging/authorize-checkin` | Alias for check-in authorization. Supports `?evaluate=true` query parameter for soft 200 rejection inspection. |
 | `POST` | `/api/charging/start` | Transactionally start charging session. |
 | `POST` | `/api/charging/complete` | Complete session, calculate kWh & cost (₹), update battery, release bay. |
 | `POST` | `/api/charging/recommend` | Rule-based smart station recommendation. |
@@ -151,7 +154,55 @@ VoltLoop incorporates an explainable, deterministic rule-based allocation engine
 
 ---
 
-## 8. Running the Complete Application
+## 8. QR-Based Charging Station Check-In & Authorization (Phase 7)
+
+VoltLoop implements a metro transit turnstile-inspired check-in and authorization workflow.
+
+```
++-------------------------------------------------------------+
+| 1. User displays Digital EV QR Pass                         |
+|    - Opaque identifier only (e.g. VL-EV-001)                |
+|    - High-density 2D QR generated via qrcode library        |
++------------------------------+------------------------------+
+                               | Scanned at bay terminal
++------------------------------v------------------------------+
+| 2. Station Terminal (/station-checkin)                      |
+|    - Camera scanner (html5-qrcode) or manual fallback       |
+|    - Selects station bay                                    |
++------------------------------+------------------------------+
+                               | POST /api/charging/check-in
++------------------------------v------------------------------+
+| 3. Backend Read-Only Validation (7 Business Rules)          |
+|    Rule 1: QR Identifier exists in database                 |
+|    Rule 2: EV status is ACTIVE (not INACTIVE)               |
+|    Rule 3: Charging station exists in database              |
+|    Rule 4: Station is AVAILABLE (not MAINTENANCE)           |
+|    Rule 5: Connector is compatible (Type 2, CCS2, 15A)      |
+|    Rule 6: EV is not already charging elsewhere             |
+|    Rule 7: Reservation window check (if reserved)           |
++------------------------------+------------------------------+
+                               | Result returned (authorized: true/false)
++------------------------------v------------------------------+
+| 4. Strict Non-Mutating Authorization                         |
+|    - Scan ALONE NEVER starts a session or modifies DB       |
+|    - EV remains ACTIVE, Station remains AVAILABLE           |
++------------------------------+------------------------------+
+                               | User clicks "Plug In & Start Charging"
++------------------------------v------------------------------+
+| 5. Explicit Session Activation (POST /api/charging/start)   |
+|    - Atomic JDBC transaction: conn.setAutoCommit(false)     |
+|    - Creates charging session, sets Station OCCUPIED,       |
+|      sets EV CHARGING, executes conn.commit()               |
++-------------------------------------------------------------+
+```
+
+### Authorization vs Session Execution Separation:
+- **Authorization (`POST /api/charging/check-in`)**: Completely read-only query execution across `vehicles`, `charging_stations`, and `reservations`. No records inserted or updated.
+- **Execution (`POST /api/charging/start`)**: Explicit operator/user step executing ACID-compliant database transaction.
+
+---
+
+## 9. Running the Complete Application
 
 ### 1. Database (Docker or Native MySQL)
 ```bash

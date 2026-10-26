@@ -55,6 +55,7 @@ Production assets will be emitted to `dist/`.
 | `/reservations` | `Reservations.jsx` | Slot reservation ledger, book new slot modal with real-time interval conflict detection (HTTP 409 alert banner), and cancellation control. |
 | `/sessions` or `/charging-sessions` | `ChargingSessions.jsx` | Tabbed monitor for Active Charging Sessions and Completed History, session completion modal with real-time billing preview (₹15.00/kWh). |
 | `/smart-charging` | `SmartCharging.jsx` | Centerpiece rule-based allocation engine. Integrated QR scanner / EV selector, desired target SoC slider, virtual queue wait time, instant recommendation calculation with priority scores, and one-click session activation. |
+| `/station-checkin` or `/check-in` | `StationCheckIn.jsx` | **Phase 7 Station Terminal Check-In & Authorization**. Metro turnstile validation workflow: select bay, live camera scanning via `html5-qrcode` or manual entry fallback, pure read-only authorization check, and explicit plug-in start action. |
 | `/analytics` | `Analytics.jsx` | Fleet energy metrics, total kWh dispensed, revenue ledger, daily charging trends SVG chart (Energy / Sessions / Billing tabs), and station utilization table. |
 
 ---
@@ -66,6 +67,7 @@ Production assets will be emitted to `dist/`.
 - **`BatteryIndicator.jsx`**: Visual battery state-of-charge gauge with color coding (`<20% CRITICAL`, `20-50% LOW`, `50-80% OPTIMAL`, `>80% FULL`), supporting bar, circular gauge, and pill variants.
 - **`EVCard.jsx`**: Modular card representation of an EV with battery indicator, QR badge copy, driver info, and one-click charging shortcut.
 - **`StationCard.jsx`**: Charging bay card showing power rating, connector type, operational status pill, and maintenance toggle.
+- **`EVQRPass.jsx`**: Digital metro-style EV boarding pass generating high-density scannable 2D QR codes via `qrcode`, with download pass image, print pass, copy QR identifier, and direct link to Station Terminal Check-In.
 - **`QRScanner.jsx`**: Dual-mode QR code scanner supporting camera simulation with animated scanning crosshairs and instant sample QR chips (`VL-EV-001` to `VL-EV-008`).
 - **`Loading.jsx` / `LoadingSpinner.jsx`**: Canonical loading indicators with animated spinners and skeleton screen modes.
 - **`ErrorMessage.jsx` / `ErrorAlert.jsx`**: Canonical error components with specialized HTTP 409 conflict formatting ("Charging station is already reserved during this time") and retry action.
@@ -87,6 +89,7 @@ Centralized service using native `fetch` with error translation:
 - `getReservations()` / `createReservation(data)` / `cancelReservation(id)`: Slot reservation endpoints.
 - `getChargingSessions()` / `getActiveChargingSessions()`: Charging session records.
 - `getSmartChargingRecommendation(data)`: Calculates optimal bay (`POST /api/charging/recommend`).
+- `checkInStation(data)` / `authorizeCheckIn(data, evaluate)`: **Phase 7 Check-In Authorization** (`POST /api/charging/check-in`).
 - `startCharging(data)`: Atomically activates charging (`POST /api/charging/start`).
 - `completeCharging(data)`: Concludes session and audits bill (`POST /api/charging/complete`).
 - `getAnalytics()`: Retrieves energy aggregations and daily trends (`GET /api/analytics`).
