@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, Plus, Search, Battery, ExternalLink, RefreshCw, X, Check, Edit2 } from 'lucide-react';
+import {
+  Car,
+  Plus,
+  Search,
+  Battery,
+  ExternalLink,
+  RefreshCw,
+  X,
+  Check,
+  Edit2,
+  QrCode,
+  Zap,
+  User,
+  Sliders,
+} from 'lucide-react';
 import { vehiclesApi, usersApi } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import BatteryIndicator from '../components/BatteryIndicator';
 import { getBatteryColor } from '../utils/formatters';
 
 const VEHICLE_TYPES = [
@@ -131,126 +146,163 @@ export default function Vehicles() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-display">EV Fleet Management</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Registered campus electric vehicles, telemetry, battery capacity, and unique QR identifiers.
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-sans">
+            EV Fleet Asset Inventory
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+            Registered electric vehicles, telemetry state-of-charge, battery capacities, and unique QR boarding passes.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchVehicles}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            <span>Refresh</span>
           </button>
           <button
             onClick={() => setIsRegisterOpen(true)}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 shadow-md shadow-emerald-500/20 transition"
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition shadow-sm shadow-emerald-500/20"
           >
             <Plus className="h-4 w-4" />
-            Register EV
+            <span>Register EV</span>
           </button>
         </div>
       </div>
 
       <ErrorAlert message={error} onRetry={fetchVehicles} />
 
-      {/* Filter / Search Bar */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Search & Statistics Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
           <input
             type="text"
-            placeholder="Search by registration, QR, type, or driver..."
+            placeholder="Search by license plate, QR code, model, driver..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-800 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
-        <div className="text-xs text-slate-400 font-medium">
-          Showing <span className="font-bold text-white">{filteredVehicles.length}</span> of {vehicles.length} EVs
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <span className="rounded-md bg-slate-900 border border-slate-800 px-2 py-1 font-mono text-slate-300">
+            {filteredVehicles.length} of {vehicles.length} EVs
+          </span>
         </div>
       </div>
 
-      {/* Fleet Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-lg">
+      {/* Fleet Table Card */}
+      <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-              <tr>
-                <th className="p-3.5">ID</th>
-                <th className="p-3.5">Registration</th>
-                <th className="p-3.5">Vehicle Type</th>
-                <th className="p-3.5">Battery %</th>
-                <th className="p-3.5">Capacity</th>
-                <th className="p-3.5">QR Identifier</th>
-                <th className="p-3.5">Driver / Owner</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Actions</th>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800/80 bg-slate-950/70 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                <th className="py-3 px-3.5">ID</th>
+                <th className="py-3 px-3.5">Vehicle License</th>
+                <th className="py-3 px-3.5">Category</th>
+                <th className="py-3 px-3.5">Battery SoC</th>
+                <th className="py-3 px-3.5">Pack Capacity</th>
+                <th className="py-3 px-3.5">QR Identifier</th>
+                <th className="py-3 px-3.5">Driver / Owner</th>
+                <th className="py-3 px-3.5 text-center">Status</th>
+                <th className="py-3 px-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {filteredVehicles.map((v) => {
-                const color = getBatteryColor(v.currentBattery);
-                return (
-                  <tr key={v.vehicleId} className="hover:bg-slate-800/30 transition">
-                    <td className="p-3.5 font-mono text-slate-400">#{v.vehicleId}</td>
-                    <td className="p-3.5 font-bold text-white tracking-wide">
-                      <Link to={`/vehicles/${v.vehicleId}`} className="hover:text-emerald-400 transition">
-                        {v.registrationNo}
-                      </Link>
-                    </td>
-                    <td className="p-3.5 text-slate-300">{v.vehicleType}</td>
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-                          <div
-                            className={`h-full rounded-full ${color.bg}`}
-                            style={{ width: `${Math.min(100, Math.max(0, v.currentBattery))}%` }}
-                          />
-                        </div>
-                        <span className="font-mono font-semibold text-slate-200">{v.currentBattery}%</span>
-                      </div>
-                    </td>
-                    <td className="p-3.5 font-mono text-slate-300">{v.batteryCapacity} kWh</td>
-                    <td className="p-3.5">
-                      <span className="inline-flex items-center gap-1 rounded bg-slate-800 border border-slate-700 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-400">
-                        {v.qrIdentifier}
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <div className="text-white font-medium">{v.ownerName || 'Campus User'}</div>
-                      <div className="text-[11px] text-slate-400">{v.ownerEmail || '—'}</div>
-                    </td>
-                    <td className="p-3.5">
-                      <StatusBadge status={v.status} />
-                    </td>
-                    <td className="p-3.5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openBatteryModal(v)}
-                          className="rounded border border-slate-700 bg-slate-800 p-1.5 text-slate-300 hover:border-emerald-500 hover:text-emerald-400 transition"
-                          title="Update Battery SoC"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
+            <tbody className="divide-y divide-slate-800/50">
+              {filteredVehicles.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="py-8 text-center text-slate-400">
+                    No electric vehicles match your filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredVehicles.map((v) => {
+                  const color = getBatteryColor(v.currentBattery);
+                  return (
+                    <tr key={v.vehicleId} className="hover:bg-slate-850/40 transition">
+                      <td className="py-3 px-3.5 font-mono text-slate-400">
+                        #{v.vehicleId}
+                      </td>
+                      <td className="py-3 px-3.5">
                         <Link
                           to={`/vehicles/${v.vehicleId}`}
-                          className="rounded border border-slate-700 bg-slate-800 p-1.5 text-slate-300 hover:border-emerald-500 hover:text-white transition"
-                          title="View Details"
+                          className="font-bold text-white hover:text-emerald-400 transition flex items-center gap-1.5"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>{v.registrationNo}</span>
+                          <ExternalLink className="h-3 w-3 text-slate-500" />
                         </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="py-3 px-3.5 text-slate-300">
+                        {v.vehicleType}
+                      </td>
+                      <td className="py-3 px-3.5 min-w-[140px]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-16 bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div
+                              className={`h-full rounded-full ${color.bg}`}
+                              style={{ width: `${Math.min(100, Math.max(0, v.currentBattery))}%` }}
+                            />
+                          </div>
+                          <span className="font-mono font-bold text-white text-[11px]">
+                            {v.currentBattery}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3.5 font-mono text-slate-300">
+                        {v.batteryCapacity} kWh
+                      </td>
+                      <td className="py-3 px-3.5">
+                        <span className="inline-flex items-center gap-1 rounded bg-slate-850 border border-slate-800 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-400">
+                          <QrCode className="h-3 w-3 text-emerald-400/80" />
+                          {v.qrIdentifier}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3.5">
+                        <div className="font-medium text-slate-200">
+                          {v.ownerName || 'Campus User'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {v.ownerEmail || '—'}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3.5 text-center">
+                        <StatusBadge status={v.status} />
+                      </td>
+                      <td className="py-3 px-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openBatteryModal(v)}
+                            className="rounded-lg border border-slate-800 bg-slate-900 p-1.5 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400 transition"
+                            title="Adjust Battery SoC"
+                          >
+                            <Sliders className="h-3.5 w-3.5" />
+                          </button>
+                          <Link
+                            to={`/vehicles/${v.vehicleId}`}
+                            className="rounded-lg border border-slate-800 bg-slate-900 p-1.5 text-slate-400 hover:border-slate-700 hover:text-white transition"
+                            title="View Full Profile & Pass"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -258,51 +310,63 @@ export default function Vehicles() {
 
       {/* Register EV Modal */}
       {isRegisterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">Register New Electric Vehicle</h3>
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
+                  <Car className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Register New Electric Vehicle</h3>
+                  <p className="text-[11px] text-slate-400">Add asset to university fleet directory</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsRegisterOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            {regError && <div className="mt-3"><ErrorAlert message={regError} /></div>}
+            {regError && <ErrorAlert message={regError} />}
 
-            <form onSubmit={handleRegisterSubmit} className="mt-4 space-y-4 text-xs">
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-medium text-slate-300">Registration Number</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  License Plate / Registration No *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. KA-01-EV-9999"
+                  placeholder="e.g. KA-01-EV-9020"
                   value={formData.registrationNo}
                   onChange={(e) => setFormData({ ...formData, registrationNo: e.target.value.toUpperCase() })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">Vehicle Type</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Vehicle Category / Type *
+                </label>
                 <select
                   value={formData.vehicleType}
                   onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                 >
                   {VEHICLE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-300">Battery Capacity (kWh)</label>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Pack Capacity (kWh) *
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -311,30 +375,33 @@ export default function Vehicles() {
                     required
                     value={formData.batteryCapacity}
                     onChange={(e) => setFormData({ ...formData, batteryCapacity: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-300">Initial Battery (%)</label>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Initial Battery (%) *
+                  </label>
                   <input
                     type="number"
-                    step="0.1"
                     min="0"
                     max="100"
                     required
                     value={formData.currentBattery}
                     onChange={(e) => setFormData({ ...formData, currentBattery: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">Driver / Owner</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Assigned User / Driver *
+                </label>
                 <select
                   value={formData.userId}
                   onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                 >
                   {users.map((u) => (
                     <option key={u.userId} value={u.userId}>
@@ -345,30 +412,32 @@ export default function Vehicles() {
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">Custom QR Identifier (Optional)</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Unique QR Identifier (Optional)
+                </label>
                 <input
                   type="text"
-                  placeholder="Auto-generated if empty (e.g. VL-EV-099)"
+                  placeholder="Auto-generated if blank (e.g. VL-EV-099)"
                   value={formData.qrIdentifier}
                   onChange={(e) => setFormData({ ...formData, qrIdentifier: e.target.value.toUpperCase() })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsRegisterOpen(false)}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-300 hover:bg-slate-700"
+                  className="rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 font-semibold text-slate-300 hover:bg-slate-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={regLoading}
-                  className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                  className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50"
                 >
-                  {regLoading ? 'Registering...' : 'Confirm Registration'}
+                  {regLoading ? 'Registering...' : 'Save & Register'}
                 </button>
               </div>
             </form>
@@ -378,34 +447,39 @@ export default function Vehicles() {
 
       {/* Battery SoC Update Modal */}
       {isBatteryModalOpen && selectedVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white">Update Battery Level</h3>
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
+                  <Sliders className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Update Battery SoC</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">{selectedVehicle.registrationNo}</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsBatteryModalOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            {batteryError && <div className="mt-3"><ErrorAlert message={batteryError} /></div>}
+            {batteryError && <ErrorAlert message={batteryError} />}
 
-            <form onSubmit={handleBatterySubmit} className="mt-4 space-y-4 text-xs">
-              <div>
-                <p className="text-slate-400">
-                  Vehicle: <span className="font-bold text-white">{selectedVehicle.registrationNo}</span>
-                </p>
-                <p className="text-slate-400">
-                  Current Battery: <span className="font-bold text-emerald-400">{selectedVehicle.currentBattery}%</span>
-                </p>
+            <form onSubmit={handleBatterySubmit} className="space-y-4 text-xs">
+              <div className="rounded-lg bg-slate-950 border border-slate-800 p-3 flex items-center justify-between">
+                <span className="text-slate-400">Current Level</span>
+                <span className="font-mono font-bold text-white text-sm">{selectedVehicle.currentBattery}%</span>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">
-                  New Battery Level: <span className="font-bold text-white">{newBatteryVal}%</span>
-                </label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-slate-300">Target Level</span>
+                  <span className="font-mono font-bold text-emerald-400 text-base">{newBatteryVal}%</span>
+                </div>
                 <input
                   type="range"
                   min="0"
@@ -413,24 +487,24 @@ export default function Vehicles() {
                   step="1"
                   value={newBatteryVal}
                   onChange={(e) => setNewBatteryVal(Number(e.target.value))}
-                  className="mt-2 w-full accent-emerald-500"
+                  className="w-full accent-emerald-500 cursor-pointer"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsBatteryModalOpen(false)}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-slate-300 hover:bg-slate-700"
+                  className="rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-1.5 text-slate-300 hover:bg-slate-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={batteryLoading}
-                  className="rounded-lg bg-emerald-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                  className="rounded-lg bg-emerald-500 px-4 py-1.5 font-bold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50"
                 >
-                  {batteryLoading ? 'Saving...' : 'Update Battery'}
+                  {batteryLoading ? 'Saving...' : 'Apply Update'}
                 </button>
               </div>
             </form>

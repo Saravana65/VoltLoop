@@ -116,18 +116,18 @@ public class ChargingSessionService {
         if (finalBattery < 0.0 || finalBattery > 100.0) {
             throw new BadRequestException("Final battery percentage must be between 0 and 100%.");
         }
-        if (energyConsumed == null || energyConsumed < 0.0) {
+        if (energyConsumed == null || energyConsumed <= 0.0) {
             // Rough estimate based on battery capacity if available
             Vehicle vehicle = vehicleRepository.getVehicleById(session.getVehicleId()).orElse(null);
             if (vehicle != null && finalBattery > session.getInitialBattery()) {
                 double batteryDiff = (finalBattery - session.getInitialBattery()) / 100.0;
                 energyConsumed = Math.round(batteryDiff * vehicle.getBatteryCapacity() * 100.0) / 100.0;
             } else {
-                energyConsumed = 0.00;
+                energyConsumed = 5.00;
             }
         }
-        if (chargingCost == null || chargingCost < 0.0) {
-            chargingCost = Math.round(energyConsumed * 15.00 * 100.0) / 100.0; // Flat â‚¹15 per kWh standard campus rate
+        if (chargingCost == null || chargingCost <= 0.0) {
+            chargingCost = Math.round(energyConsumed * 15.00 * 100.0) / 100.0; // Flat ₹15 per kWh standard campus rate
         }
 
         LocalDateTime endTime = LocalDateTime.now();

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class ChargingReservation {
     private Integer reservationId;
+    private Integer userId;
     private Integer vehicleId;
     private Integer stationId;
     private LocalDateTime startTime;
@@ -11,11 +12,17 @@ public class ChargingReservation {
     private String status; // RESERVED, ACTIVE, COMPLETED, CANCELLED
     private LocalDateTime createdAt;
 
-    // Display fields joined from vehicles and stations
+    // Display fields joined from vehicles, stations, and users
+    private String userName;
+    private String userEmail;
     private String registrationNo;
     private String qrIdentifier;
+    private String vehicleType;
     private String stationName;
     private String stationLocation;
+    private String connectorType;
+    private Double powerRating;
+    private Double estimatedCost;
 
     public ChargingReservation() {
     }
@@ -38,6 +45,14 @@ public class ChargingReservation {
 
     public void setReservationId(Integer reservationId) {
         this.reservationId = reservationId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 
     public Integer getVehicleId() {
@@ -88,6 +103,22 @@ public class ChargingReservation {
         this.createdAt = createdAt;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     public String getRegistrationNo() {
         return registrationNo;
     }
@@ -104,6 +135,14 @@ public class ChargingReservation {
         this.qrIdentifier = qrIdentifier;
     }
 
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public void setVehicleType(String vehicleType) {
+        this.vehicleType = vehicleType;
+    }
+
     public String getStationName() {
         return stationName;
     }
@@ -118,5 +157,29 @@ public class ChargingReservation {
 
     public void setStationLocation(String stationLocation) {
         this.stationLocation = stationLocation;
+    }
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
+
+    public Double getPowerRating() {
+        return powerRating;
+    }
+
+    public void setPowerRating(Double powerRating) {
+        this.powerRating = powerRating;
+    }
+
+    public Double getEstimatedCost() {
+        return estimatedCost;
+    }
+
+    public void setEstimatedCost(Double estimatedCost) {
+        this.estimatedCost = estimatedCost;
     }
 }

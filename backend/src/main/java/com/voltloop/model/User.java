@@ -1,12 +1,16 @@
 package com.voltloop.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
 public class User {
     private Integer userId;
     private String name;
     private String email;
-    private String role;     // ADMIN, DRIVER, OPERATOR
+    @JsonIgnore
+    private String passwordHash;
+    private String role;     // OWNER, CUSTOMER, ADMIN, DRIVER, OPERATOR
+    private String phone;
     private String status;   // ACTIVE, INACTIVE
     private LocalDateTime createdAt;
 
@@ -18,6 +22,17 @@ public class User {
         this.name = name;
         this.email = email;
         this.role = role;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
+    public User(Integer userId, String name, String email, String passwordHash, String role, String phone, String status, LocalDateTime createdAt) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.phone = phone;
         this.status = status;
         this.createdAt = createdAt;
     }
@@ -46,12 +61,28 @@ public class User {
         this.email = email;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public String getRole() {
         return role;
     }
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getStatus() {

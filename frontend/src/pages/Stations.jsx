@@ -1,12 +1,24 @@
-﻿import React, { useState, useEffect } from 'react';
-import { BatteryCharging, Plus, RefreshCw, Zap, MapPin, Wrench, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  BatteryCharging,
+  Plus,
+  RefreshCw,
+  Zap,
+  MapPin,
+  Wrench,
+  CheckCircle2,
+  X,
+  AlertCircle,
+  Activity,
+  Layers,
+} from 'lucide-react';
 import { stationsApi } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 
-const CONNECTOR_TYPES = ['Type-2 AC', 'CCS2 Fast DC', 'Normal AC (5A/15A Socket)', 'Type 2'];
-const CHARGER_TYPES = ['AC Level 2', 'DC Fast Charger'];
+const CONNECTOR_TYPES = ['Type 2', 'CCS2', 'Standard 15A'];
+const CHARGER_TYPES = ['AC Level 2 Dual', 'AC Level 2 Single', 'DC Fast Charger', 'AC Standard Socket'];
 
 export default function Stations() {
   const [stations, setStations] = useState([]);
@@ -20,8 +32,8 @@ export default function Stations() {
   const [formData, setFormData] = useState({
     stationName: '',
     location: '',
-    chargerType: 'AC Level 2',
-    connectorType: 'Type-2 AC',
+    chargerType: 'AC Level 2 Dual',
+    connectorType: 'Type 2',
     powerRating: 22.0,
     status: 'AVAILABLE',
   });
@@ -70,164 +82,223 @@ export default function Stations() {
       setFormData({
         stationName: '',
         location: '',
-        chargerType: 'AC Level 2',
-        connectorType: 'Type-2 AC',
+        chargerType: 'AC Level 2 Dual',
+        connectorType: 'Type 2',
         powerRating: 22.0,
         status: 'AVAILABLE',
       });
       fetchStations();
     } catch (err) {
-      setModalError(err.message || 'Failed to add station.');
+      setModalError(err.message || 'Failed to add charging bay.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  if (loading) return <LoadingSpinner message="Scanning campus charging bays..." />;
+  const availableCount = stations.filter((s) => s.status === 'AVAILABLE').length;
+  const occupiedCount = stations.filter((s) => s.status === 'OCCUPIED').length;
+  const maintenanceCount = stations.filter((s) => s.status === 'MAINTENANCE').length;
+
+  if (loading) return <LoadingSpinner message="Scanning campus charging infrastructure..." />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-display">Charging Stations</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Campus EV charging bays, power ratings (kW), connector compatibility, and operational status.
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-sans">
+            Charging Stations & Grid Nodes
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+            Hardware distribution, real-time bay availability, connector specifications, and maintenance control.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchStations}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            <span>Refresh</span>
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 shadow-md shadow-emerald-500/20 transition"
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition shadow-sm shadow-emerald-500/20"
           >
             <Plus className="h-4 w-4" />
-            Add Station Bay
+            <span>Add Charging Bay</span>
           </button>
         </div>
       </div>
 
       <ErrorAlert message={error} onRetry={fetchStations} />
 
-      {/* Stations Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Grid Infrastructure Quick Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-4">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Total Bays</span>
+          <span className="text-2xl font-bold text-white mt-1 block font-mono">{stations.length}</span>
+        </div>
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 block">Available</span>
+          <span className="text-2xl font-bold text-emerald-400 mt-1 block font-mono">{availableCount}</span>
+        </div>
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 block">Occupied / In Use</span>
+          <span className="text-2xl font-bold text-amber-400 mt-1 block font-mono">{occupiedCount}</span>
+        </div>
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-400 block">Maintenance</span>
+          <span className="text-2xl font-bold text-rose-400 mt-1 block font-mono">{maintenanceCount}</span>
+        </div>
+      </div>
+
+      {/* Station Bays Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {stations.map((st) => (
           <div
             key={st.stationId}
-            className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-700 transition"
+            className="group rounded-xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-sm hover:border-slate-700/80 transition-all flex flex-col justify-between"
           >
             <div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-white tracking-wide">{st.stationName}</h3>
-                    <span className="font-mono text-xs text-slate-400">#{st.stationId}</span>
+              {/* Card Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <Zap className="h-4.5 w-4.5" />
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
-                    <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                    <span>{st.location}</span>
+                  <div>
+                    <h3 className="text-base font-bold text-white tracking-tight">
+                      {st.stationName}
+                    </h3>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Bay #{st.stationId}
+                    </span>
                   </div>
                 </div>
                 <StatusBadge status={st.status} />
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs border-t border-slate-800 pt-3">
-                <div className="rounded-lg bg-slate-950/60 p-2.5 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Power Rating</span>
-                  <span className="text-sm font-bold text-emerald-400">{st.powerRating} kW</span>
+              {/* Station Details */}
+              <div className="mt-4 space-y-2.5 text-xs">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">{st.location}</span>
                 </div>
-                <div className="rounded-lg bg-slate-950/60 p-2.5 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Charger Type</span>
-                  <span className="text-xs font-semibold text-white truncate block">{st.chargerType}</span>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
+                  <div className="rounded-lg bg-slate-950/60 p-2.5 border border-slate-850">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">Power Rating</span>
+                    <span className="text-sm font-bold text-white font-mono mt-0.5 block">{st.powerRating} kW</span>
+                  </div>
+                  <div className="rounded-lg bg-slate-950/60 p-2.5 border border-slate-850">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">Connector Standard</span>
+                    <span className="text-sm font-bold text-emerald-400 font-mono mt-0.5 block truncate">{st.connectorType}</span>
+                  </div>
                 </div>
-                <div className="col-span-2 rounded-lg bg-slate-950/60 p-2.5 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Connector Standard</span>
-                  <span className="text-xs font-semibold text-cyan-400">{st.connectorType}</span>
+
+                <div className="text-[11px] text-slate-400">
+                  Architecture: <span className="text-slate-300 font-medium">{st.chargerType}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-              <span className="text-[11px] text-slate-400">Hardware Control:</span>
+            {/* Bottom Actions */}
+            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <span className="text-[11px] text-slate-400 font-mono">
+                {st.status === 'AVAILABLE' ? 'Online & Ready' : st.status === 'OCCUPIED' ? 'Dispensing Power' : 'Offline / Service'}
+              </span>
+
               <button
                 onClick={() => handleStatusToggle(st)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                disabled={st.status === 'OCCUPIED'}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
                   st.status === 'MAINTENANCE'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                    : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
-                }`}
+                    ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                    : 'border border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <Wrench className="h-3 w-3" />
-                {st.status === 'MAINTENANCE' ? 'Restore Available' : 'Mark Maintenance'}
+                <span>{st.status === 'MAINTENANCE' ? 'Set Available' : 'Set Maint.'}</span>
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Add Station Modal */}
+      {/* Add Charging Bay Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">Add Charging Station Bay</h3>
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
+                  <Zap className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Add Campus Charging Bay</h3>
+                  <p className="text-[11px] text-slate-400">Register new charging station node</p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            {modalError && <div className="mt-3"><ErrorAlert message={modalError} /></div>}
+            {modalError && <ErrorAlert message={modalError} />}
 
-            <form onSubmit={handleAddSubmit} className="mt-4 space-y-4 text-xs">
+            <form onSubmit={handleAddSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-medium text-slate-300">Station Code / Name</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Station Identifier / Name *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. CS-AUDITORIUM-01"
+                  placeholder="e.g. CS-LIB-01"
                   value={formData.stationName}
                   onChange={(e) => setFormData({ ...formData, stationName: e.target.value.toUpperCase() })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono uppercase focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">Campus Location</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Campus Location Description *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Auditorium Parking Lot B"
+                  placeholder="e.g. Central Library West Parking Bay"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-300">Charger Type</label>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Connector Type *
+                  </label>
                   <select
-                    value={formData.chargerType}
-                    onChange={(e) => setFormData({ ...formData, chargerType: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                    value={formData.connectorType}
+                    onChange={(e) => setFormData({ ...formData, connectorType: e.target.value })}
+                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                   >
-                    {CHARGER_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {CONNECTOR_TYPES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-300">Power Rating (kW)</label>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Power Rating (kW) *
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -236,38 +307,40 @@ export default function Stations() {
                     required
                     value={formData.powerRating}
                     onChange={(e) => setFormData({ ...formData, powerRating: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white font-mono focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300">Connector Standard</label>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Charger Architecture *
+                </label>
                 <select
-                  value={formData.connectorType}
-                  onChange={(e) => setFormData({ ...formData, connectorType: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                  value={formData.chargerType}
+                  onChange={(e) => setFormData({ ...formData, chargerType: e.target.value })}
+                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
                 >
-                  {CONNECTOR_TYPES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {CHARGER_TYPES.map((ct) => (
+                    <option key={ct} value={ct}>{ct}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-300 hover:bg-slate-700"
+                  className="rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 font-semibold text-slate-300 hover:bg-slate-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                  className="rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50"
                 >
-                  {actionLoading ? 'Creating...' : 'Create Station'}
+                  {actionLoading ? 'Creating Bay...' : 'Save Station'}
                 </button>
               </div>
             </form>

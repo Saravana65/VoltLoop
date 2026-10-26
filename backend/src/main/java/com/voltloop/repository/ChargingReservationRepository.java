@@ -31,6 +31,10 @@ public class ChargingReservationRepository {
         public ChargingReservation mapRow(ResultSet rs, int rowNum) throws SQLException {
             ChargingReservation res = new ChargingReservation();
             res.setReservationId(rs.getInt("reservation_id"));
+            try {
+                int uid = rs.getInt("user_id");
+                if (!rs.wasNull()) res.setUserId(uid);
+            } catch (SQLException ignored) {}
             res.setVehicleId(rs.getInt("vehicle_id"));
             res.setStationId(rs.getInt("station_id"));
             Timestamp startTs = rs.getTimestamp("start_time");
@@ -47,17 +51,17 @@ public class ChargingReservationRepository {
                 res.setCreatedAt(createdTs.toLocalDateTime());
             }
 
+            try { res.setUserName(rs.getString("user_name")); } catch (SQLException ignored) {}
+            try { res.setUserEmail(rs.getString("user_email")); } catch (SQLException ignored) {}
+            try { res.setRegistrationNo(rs.getString("registration_no")); } catch (SQLException ignored) {}
+            try { res.setQrIdentifier(rs.getString("qr_identifier")); } catch (SQLException ignored) {}
+            try { res.setVehicleType(rs.getString("vehicle_type")); } catch (SQLException ignored) {}
+            try { res.setStationName(rs.getString("station_name")); } catch (SQLException ignored) {}
+            try { res.setStationLocation(rs.getString("location")); } catch (SQLException ignored) {}
+            try { res.setConnectorType(rs.getString("connector_type")); } catch (SQLException ignored) {}
             try {
-                res.setRegistrationNo(rs.getString("registration_no"));
-            } catch (SQLException ignored) {}
-            try {
-                res.setQrIdentifier(rs.getString("qr_identifier"));
-            } catch (SQLException ignored) {}
-            try {
-                res.setStationName(rs.getString("station_name"));
-            } catch (SQLException ignored) {}
-            try {
-                res.setStationLocation(rs.getString("location"));
+                double pr = rs.getDouble("power_rating");
+                if (!rs.wasNull()) res.setPowerRating(pr);
             } catch (SQLException ignored) {}
 
             return res;
@@ -65,17 +69,22 @@ public class ChargingReservationRepository {
     }
 
     public ChargingReservation createReservation(ChargingReservation reservation) {
-        String sql = "INSERT INTO charging_reservations (vehicle_id, station_id, start_time, end_time, status) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO charging_reservations (user_id, vehicle_id, station_id, start_time, end_time, status) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, reservation.getVehicleId());
-            ps.setInt(2, reservation.getStationId());
-            ps.setTimestamp(3, Timestamp.valueOf(reservation.getStartTime()));
-            ps.setTimestamp(4, Timestamp.valueOf(reservation.getEndTime()));
-            ps.setString(5, reservation.getStatus() != null ? reservation.getStatus() : "RESERVED");
+            if (reservation.getUserId() != null) {
+                ps.setInt(1, reservation.getUserId());
+            } else {
+                ps.setNull(1, java.sql.Types.INTEGER);
+            }
+            ps.setInt(2, reservation.getVehicleId());
+            ps.setInt(3, reservation.getStationId());
+            ps.setTimestamp(4, Timestamp.valueOf(reservation.getStartTime()));
+            ps.setTimestamp(5, Timestamp.valueOf(reservation.getEndTime()));
+            ps.setString(6, reservation.getStatus() != null ? reservation.getStatus() : "RESERVED");
             return ps;
         }, keyHolder);
 
@@ -86,19 +95,53 @@ public class ChargingReservationRepository {
     }
 
     public List<ChargingReservation> getAllReservations() {
-        String sql = "SELECT r.reservation_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
-                "r.status, r.created_at, v.registration_no, v.qr_identifier, cs.station_name, cs.location " +
+        String sql = "SELECT r.reservation_id, r.user_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
+                "r.status, r.created_at, u.name AS user_name, u.email AS user_email, " +
+                "v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location, " +
+                "cs.connector_type, cs.power_rating " +
                 "FROM charging_reservations r " +
+                "LEFT JOIN users u ON r.user_id = u.user_id " +
                 "JOIN vehicles v ON r.vehicle_id = v.vehicle_id " +
                 "JOIN charging_stations cs ON r.station_id = cs.station_id " +
                 "ORDER BY r.start_time DESC";
         return jdbcTemplate.query(sql, new ReservationRowMapper());
     }
 
-    public Optional<ChargingReservation> getReservationById(int reservationId) {
-        String sql = "SELECT r.reservation_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
-                "r.status, r.created_at, v.registration_no, v.qr_identifier, cs.station_name, cs.location " +
+    public List<ChargingReservation> getReservationsByUserId(int userId) {
+        String sql = "SELECT r.reservation_id, r.user_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
+                "r.status, r.created_at, u.name AS user_name, u.email AS user_email, " +
+                "v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location, " +
+                "cs.connector_type, cs.power_rating " +
                 "FROM charging_reservations r " +
+                "LEFT JOIN users u ON r.user_id = u.user_id " +
+                "JOIN vehicles v ON r.vehicle_id = v.vehicle_id " +
+                "JOIN charging_stations cs ON r.station_id = cs.station_id " +
+                "WHERE r.user_id = ? " +
+                "ORDER BY r.start_time DESC";
+        return jdbcTemplate.query(sql, new ReservationRowMapper(), userId);
+    }
+
+    public List<ChargingReservation> getReservationsByStationOwnerId(int ownerId) {
+        String sql = "SELECT r.reservation_id, r.user_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
+                "r.status, r.created_at, u.name AS user_name, u.email AS user_email, " +
+                "v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location, " +
+                "cs.connector_type, cs.power_rating " +
+                "FROM charging_reservations r " +
+                "LEFT JOIN users u ON r.user_id = u.user_id " +
+                "JOIN vehicles v ON r.vehicle_id = v.vehicle_id " +
+                "JOIN charging_stations cs ON r.station_id = cs.station_id " +
+                "WHERE cs.owner_id = ? " +
+                "ORDER BY r.start_time DESC";
+        return jdbcTemplate.query(sql, new ReservationRowMapper(), ownerId);
+    }
+
+    public Optional<ChargingReservation> getReservationById(int reservationId) {
+        String sql = "SELECT r.reservation_id, r.user_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
+                "r.status, r.created_at, u.name AS user_name, u.email AS user_email, " +
+                "v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location, " +
+                "cs.connector_type, cs.power_rating " +
+                "FROM charging_reservations r " +
+                "LEFT JOIN users u ON r.user_id = u.user_id " +
                 "JOIN vehicles v ON r.vehicle_id = v.vehicle_id " +
                 "JOIN charging_stations cs ON r.station_id = cs.station_id " +
                 "WHERE r.reservation_id = ?";
@@ -117,9 +160,12 @@ public class ChargingReservationRepository {
     }
 
     public List<ChargingReservation> findOverlappingReservations(int stationId, LocalDateTime start, LocalDateTime end) {
-        String sql = "SELECT r.reservation_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
-                "r.status, r.created_at, v.registration_no, v.qr_identifier, cs.station_name, cs.location " +
+        String sql = "SELECT r.reservation_id, r.user_id, r.vehicle_id, r.station_id, r.start_time, r.end_time, " +
+                "r.status, r.created_at, u.name AS user_name, u.email AS user_email, " +
+                "v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location, " +
+                "cs.connector_type, cs.power_rating " +
                 "FROM charging_reservations r " +
+                "LEFT JOIN users u ON r.user_id = u.user_id " +
                 "JOIN vehicles v ON r.vehicle_id = v.vehicle_id " +
                 "JOIN charging_stations cs ON r.station_id = cs.station_id " +
                 "WHERE r.station_id = ? " +

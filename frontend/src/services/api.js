@@ -1,7 +1,8 @@
 /**
  * VoltLoop Centralized API Service Layer
  * Connects React frontend directly to the Spring Boot REST API.
- * Uses environment configuration (VITE_API_BASE_URL) with fallback to proxy `/api`.
+ * Supports Phase 9 Dual-Portal (Owner & Customer), JWT/Bearer auth tokens,
+ * Payments, QR Station resolution, and all legacy Phases 1-8 operations.
  */
 
 const API_BASE =
@@ -10,12 +11,15 @@ const API_BASE =
   '/api';
 
 /**
- * Standardized Fetch Client with structured HTTP status parsing
+ * Standardized Fetch Client with structured HTTP status parsing and auth injection
  */
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const token = localStorage.getItem('voltloop_token');
+
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
@@ -60,7 +64,102 @@ async function request(endpoint, options = {}) {
 }
 
 // ==========================================
-// Standalone Named Functions (as specified in Section 19)
+// Phase 9: Authentication & Profile APIs
+// ==========================================
+
+export const loginApi = (credentials) =>
+  request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
+
+export const registerCustomerApi = (data) =>
+  request('/auth/register-customer', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getMeApi = () => request('/auth/me');
+
+// ==========================================
+// Phase 9: Owner Portal APIs
+// ==========================================
+
+export const getOwnerOverview = () => request('/owner/overview');
+export const getOwnerStations = () => request('/owner/stations');
+export const updateOwnerStationStatus = (stationId, status) =>
+  request(`/owner/stations/${stationId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
+export const getOwnerActiveSessions = () => request('/owner/sessions/active');
+export const getOwnerRecentActivity = () => request('/owner/activity');
+export const getOwnerRevenue = () => request('/owner/revenue');
+
+// ==========================================
+// Phase 9: Customer Portal APIs
+// ==========================================
+
+export const getCustomerDashboard = () => request('/customer/dashboard');
+export const resolveStationByQr = (identifier) =>
+  request(`/customer/stations/qr/${encodeURIComponent(identifier)}`);
+export const getCustomerVehicles = () => request('/customer/vehicles');
+export const addCustomerVehicle = (data) =>
+  request('/customer/vehicles', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const getCustomerBookings = () => request('/customer/bookings');
+export const createCustomerBooking = (data) =>
+  request('/customer/bookings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const cancelCustomerBooking = (bookingId) =>
+  request(`/customer/bookings/${bookingId}/cancel`, {
+    method: 'PUT',
+  });
+export const getCustomerSessions = () => request('/customer/sessions');
+export const startCustomerCharging = (data) =>
+  request('/customer/charging/start', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const completeCustomerCharging = (data) =>
+  request('/customer/charging/complete', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const getCustomerProfile = () => request('/customer/profile');
+export const updateCustomerProfile = (data) =>
+  request('/customer/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+// ==========================================
+// Phase 9: Payment APIs (Simulated PBL Engine)
+// ==========================================
+
+export const initiatePayment = (data) =>
+  request('/payments/initiate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const simulatePayment = (data) =>
+  request('/payments/simulate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const getPaymentReceipt = (transactionRef) =>
+  request(`/payments/receipt/${encodeURIComponent(transactionRef)}`);
+
+export const getCustomerPayments = () => request('/payments/customer');
+
+// ==========================================
+// Phases 1-8: Existing Core System APIs
 // ==========================================
 
 export const getVehicles = () => request('/vehicles');
@@ -140,7 +239,6 @@ export const getDashboard = async () => {
   try {
     return await request('/analytics/summary');
   } catch (err) {
-    // Graceful fallback to multi-endpoint aggregation
     const [vehicles, stations, sessions, active] = await Promise.all([
       getVehicles(),
       getStations(),
@@ -163,8 +261,45 @@ export const getDashboard = async () => {
 export const getUsers = () => request('/users');
 
 // ==========================================
-// Namespaced Objects for API Consistency
+// Namespaced Export Bundles
 // ==========================================
+
+export const authApi = {
+  login: loginApi,
+  registerCustomer: registerCustomerApi,
+  getMe: getMeApi,
+};
+
+export const ownerApi = {
+  getOverview: getOwnerOverview,
+  getStations: getOwnerStations,
+  updateStationStatus: updateOwnerStationStatus,
+  getActiveSessions: getOwnerActiveSessions,
+  getActivity: getOwnerRecentActivity,
+  getRevenue: getOwnerRevenue,
+};
+
+export const customerApi = {
+  getDashboard: getCustomerDashboard,
+  resolveStationByQr,
+  getVehicles: getCustomerVehicles,
+  addVehicle: addCustomerVehicle,
+  getBookings: getCustomerBookings,
+  createBooking: createCustomerBooking,
+  cancelBooking: cancelCustomerBooking,
+  getSessions: getCustomerSessions,
+  startCharging: startCustomerCharging,
+  completeCharging: completeCustomerCharging,
+  getProfile: getCustomerProfile,
+  updateProfile: updateCustomerProfile,
+};
+
+export const paymentsApi = {
+  initiate: initiatePayment,
+  simulate: simulatePayment,
+  getReceipt: getPaymentReceipt,
+  getCustomerPayments,
+};
 
 export const vehiclesApi = {
   getAll: getVehicles,
@@ -221,6 +356,10 @@ export const usersApi = {
 };
 
 export default {
+  authApi,
+  ownerApi,
+  customerApi,
+  paymentsApi,
   getDashboard,
   getVehicles,
   getVehicleById,

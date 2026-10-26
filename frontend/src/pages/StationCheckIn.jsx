@@ -15,12 +15,14 @@ import {
   MapPin,
   Clock,
   Sparkles,
+  Layers,
+  Cpu,
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { stationsApi, vehiclesApi, checkInStation, startCharging } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
-import Loading from '../components/Loading';
-import ErrorMessage from '../components/ErrorMessage';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorAlert from '../components/ErrorAlert';
 
 export default function StationCheckIn() {
   const location = useLocation();
@@ -63,7 +65,6 @@ export default function StationCheckIn() {
         if (initialStationId) {
           setSelectedStationId(Number(initialStationId));
         } else if (list && list.length > 0) {
-          // Default to first AVAILABLE station if available, otherwise first station
           const firstAvail = list.find((s) => s.status === 'AVAILABLE') || list[0];
           setSelectedStationId(firstAvail.stationId);
         }
@@ -104,7 +105,6 @@ export default function StationCheckIn() {
     setCameraError(null);
     setIsCameraActive(true);
 
-    // Give DOM a tick to render #qr-reader element
     setTimeout(async () => {
       const element = document.getElementById('qr-reader');
       if (!element) return;
@@ -117,10 +117,9 @@ export default function StationCheckIn() {
           { facingMode: 'environment' },
           {
             fps: 10,
-            qrbox: { width: 250, height: 250 },
+            qrbox: { width: 240, height: 240 },
           },
           (decodedText) => {
-            // Debounce duplicate scans
             if (isScanningRef.current) return;
             isScanningRef.current = true;
 
@@ -129,9 +128,7 @@ export default function StationCheckIn() {
             stopCameraScanner();
             handleAuthorize(cleanCode);
           },
-          () => {
-            // Ignore frame scan failures while seeking QR
-          }
+          () => {}
         );
       } catch (err) {
         console.error('Camera initialization failed', err);
@@ -167,7 +164,6 @@ export default function StationCheckIn() {
     setSessionSuccess(null);
 
     try {
-      // Step 4: Backend Charging Authorization Validation
       const result = await checkInStation({
         qrIdentifier: targetCode,
         stationId: Number(selectedStationId),
@@ -212,7 +208,6 @@ export default function StationCheckIn() {
         registrationNo: authResult.vehicle.registrationNo,
       });
 
-      // Clear authorization card and show active session confirmation
       setTimeout(() => {
         navigate('/sessions');
       }, 2500);
@@ -226,47 +221,47 @@ export default function StationCheckIn() {
   const selectedStation = stations.find((s) => s.stationId === Number(selectedStationId));
 
   if (loadingStations) {
-    return <Loading message="Loading charging bays and authorization gateway..." />;
+    return <LoadingSpinner message="Connecting to station bay authorization terminals..." />;
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
           <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 p-2 text-slate-950 font-bold shadow-lg shadow-emerald-500/20">
-              <QrCode className="h-5 w-5" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white font-display">
-              Charging Station Check-In & Authorization
-            </h1>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-sans">
+              Charging Station Terminal Check-In
+            </h2>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-mono font-bold text-emerald-400 border border-emerald-500/20">
+              Phase 7 Metro Turnstile
+            </span>
           </div>
-          <p className="mt-1 text-sm text-slate-400">
-            Metro-style QR validation: Scan EV pass to verify compatibility, bay availability, and authorization before charging.
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+            Validate EV QR pass, connector compatibility, and bay availability before initiating charging. Pure read-only authorization.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             to="/smart-charging"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition"
           >
             <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            Smart Allocation
+            <span>Smart Allocation</span>
           </Link>
         </div>
       </div>
 
-      {/* Step 1: Charging Station Bay Selection */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      {/* Step 1: Select Bay Terminal */}
+      <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/20">
               1
             </span>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-              Select Charging Bay Terminal
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+              Target Charging Station Bay
             </h3>
           </div>
           {selectedStation && <StatusBadge status={selectedStation.status} />}
@@ -274,8 +269,8 @@ export default function StationCheckIn() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Active Station Bay
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              Active Hardware Bay
             </label>
             <select
               value={selectedStationId}
@@ -283,7 +278,7 @@ export default function StationCheckIn() {
                 setSelectedStationId(Number(e.target.value));
                 setAuthResult(null);
               }}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
             >
               {stations.map((s) => (
                 <option key={s.stationId} value={s.stationId}>
@@ -294,14 +289,14 @@ export default function StationCheckIn() {
           </div>
 
           {selectedStation && (
-            <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-800/80 text-xs flex flex-col justify-center">
-              <div className="flex items-center gap-1 text-slate-300 font-medium">
-                <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                <span>{selectedStation.location}</span>
+            <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-850 text-xs flex flex-col justify-center">
+              <div className="flex items-center gap-1.5 text-slate-300">
+                <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span className="truncate">{selectedStation.location}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-slate-400 font-mono text-[11px]">
                 <span>Architecture: {selectedStation.chargerType}</span>
-                <span className="text-emerald-400 font-bold">{selectedStation.powerRating} kW Output</span>
+                <span className="text-emerald-400 font-bold">{selectedStation.powerRating} kW</span>
               </div>
             </div>
           )}
@@ -309,14 +304,14 @@ export default function StationCheckIn() {
       </div>
 
       {/* Step 2: EV QR Code Scanner & Check-In */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/20">
               2
             </span>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-              Scan or Enter EV QR Pass
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+              Scan or Enter Digital EV Pass
             </h3>
           </div>
 
@@ -329,14 +324,14 @@ export default function StationCheckIn() {
                 startCameraScanner();
               }
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               isCameraActive
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
                 : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
             }`}
           >
             <Camera className="h-3.5 w-3.5" />
-            {isCameraActive ? 'Close Camera Scanner' : 'Activate Camera Scanner'}
+            <span>{isCameraActive ? 'Close Camera Scanner' : 'Activate Camera Scanner'}</span>
           </button>
         </div>
 
@@ -345,7 +340,7 @@ export default function StationCheckIn() {
           <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/30 bg-black p-3">
             <div id="qr-reader" className="w-full max-w-md mx-auto" />
             <p className="mt-2 text-center text-xs font-medium text-emerald-400 animate-pulse">
-              Point station camera at EV QR Code on dashboard or mobile pass...
+              Point terminal camera at EV QR Code on dashboard or mobile pass...
             </p>
           </div>
         )}
@@ -367,29 +362,29 @@ export default function StationCheckIn() {
         >
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
               <input
                 type="text"
                 placeholder="Enter QR Identifier (e.g. VL-EV-001, VL-EV-002)"
                 value={qrCode}
                 onChange={(e) => setQrCode(e.target.value.toUpperCase())}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none font-mono uppercase"
+                className="w-full rounded-lg border border-slate-800 bg-slate-950 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none font-mono uppercase"
               />
             </div>
             <button
               type="submit"
               disabled={evaluating || !qrCode.trim()}
-              className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50 shadow-md shadow-emerald-500/20"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50 shadow-sm shadow-emerald-500/20"
             >
               {evaluating ? (
                 <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                   <span>Validating...</span>
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Check-In & Validate</span>
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>Authorize Gate</span>
                 </>
               )}
             </button>
@@ -406,7 +401,7 @@ export default function StationCheckIn() {
                   setQrCode(chip);
                   handleAuthorize(chip);
                 }}
-                className="rounded border border-slate-700 bg-slate-800/80 px-2 py-0.5 font-mono text-[11px] text-slate-300 hover:border-emerald-500 hover:text-emerald-400 transition"
+                className="rounded border border-slate-800 bg-slate-950 px-2.5 py-1 font-mono text-[11px] text-slate-300 hover:border-emerald-500 hover:text-emerald-400 transition"
               >
                 {chip}
               </button>
@@ -417,10 +412,10 @@ export default function StationCheckIn() {
 
       {/* Active Session Success Flash */}
       {sessionSuccess && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-5 text-emerald-300 shadow-xl flex items-center gap-3">
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-4 text-emerald-300 shadow-sm flex items-center gap-3">
           <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
           <div>
-            <h4 className="text-base font-bold text-white">Charging Session Activated!</h4>
+            <h4 className="text-sm font-bold text-white">Charging Session Activated!</h4>
             <p className="text-xs text-emerald-200 mt-0.5">
               Session #{sessionSuccess.sessionId} underway for {sessionSuccess.registrationNo} at {sessionSuccess.stationName}. Redirecting to live monitor...
             </p>
@@ -428,47 +423,47 @@ export default function StationCheckIn() {
         </div>
       )}
 
-      {/* Step 3: Metro-Style Authorization Result Terminal */}
+      {/* Step 3: Metro Turnstile Gate Card */}
       {authResult && (
         <div
-          className={`rounded-2xl border p-6 shadow-2xl transition-all duration-300 ${
+          className={`rounded-xl border p-5 shadow-sm transition-all duration-300 ${
             authResult.authorized
-              ? 'border-emerald-500/50 bg-slate-900/90 shadow-emerald-500/10'
-              : 'border-rose-500/50 bg-slate-900/90 shadow-rose-500/10'
+              ? 'border-emerald-500/40 bg-slate-900/80'
+              : 'border-rose-500/40 bg-slate-900/80'
           }`}
         >
           {/* Result Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-800">
             <div className="flex items-center gap-3">
               <div
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg ${
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm ${
                   authResult.authorized
-                    ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/30'
-                    : 'bg-rose-500 text-white shadow-rose-500/30'
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'bg-rose-500 text-white'
                 }`}
               >
                 {authResult.authorized ? (
-                  <CheckCircle2 className="h-7 w-7" />
+                  <CheckCircle2 className="h-6 w-6" />
                 ) : (
-                  <XCircle className="h-7 w-7" />
+                  <XCircle className="h-6 w-6" />
                 )}
               </div>
               <div>
                 <span
-                  className={`text-xs font-black uppercase tracking-widest ${
+                  className={`text-[10px] font-bold uppercase tracking-widest block ${
                     authResult.authorized ? 'text-emerald-400' : 'text-rose-400'
                   }`}
                 >
                   {authResult.authorized ? 'Gate Open • Access Granted' : 'Gate Locked • Access Denied'}
                 </span>
-                <h3 className="text-xl font-extrabold text-white">
+                <h3 className="text-lg font-bold text-white">
                   {authResult.authorized ? 'Authorized to Charge' : 'Check-In Rejected'}
                 </h3>
               </div>
             </div>
 
             <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                 authResult.authorized
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
@@ -479,7 +474,7 @@ export default function StationCheckIn() {
           </div>
 
           {/* Reason Box */}
-          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-4 text-xs">
+          <div className="mt-3.5 rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs">
             <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
               System Validation Reason
             </span>
@@ -494,61 +489,51 @@ export default function StationCheckIn() {
 
           {/* Verified Vehicle & Bay Details (if authorized) */}
           {authResult.authorized && authResult.vehicle && (
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Vehicle</span>
+            <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="rounded-lg bg-slate-950/70 p-2.5 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Vehicle</span>
                 <span className="font-bold text-white mt-0.5 block truncate">
                   {authResult.vehicle.registrationNo}
                 </span>
-                <span className="text-[11px] font-mono text-emerald-400 block">
+                <span className="text-[10px] font-mono text-emerald-400 block">
                   {authResult.vehicle.qrIdentifier}
                 </span>
               </div>
 
-              <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Current Battery</span>
-                <span className="font-bold text-emerald-400 mt-0.5 block text-sm">
+              <div className="rounded-lg bg-slate-950/70 p-2.5 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Current Battery</span>
+                <span className="font-bold text-emerald-400 mt-0.5 block text-sm font-mono">
                   {authResult.vehicle.currentBattery}%
                 </span>
-                <span className="text-[11px] text-slate-400 block font-mono">
+                <span className="text-[10px] text-slate-400 block font-mono">
                   {authResult.vehicle.batteryCapacity} kWh Pack
                 </span>
               </div>
 
-              <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Charging Station</span>
+              <div className="rounded-lg bg-slate-950/70 p-2.5 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Target Bay</span>
                 <span className="font-bold text-white mt-0.5 block truncate">
                   {authResult.station?.stationName}
                 </span>
-                <span className="text-[11px] text-cyan-400 block font-mono">
+                <span className="text-[10px] text-cyan-400 block font-mono">
                   {authResult.station?.powerRating} kW
                 </span>
               </div>
 
-              <div className="rounded-lg bg-slate-950/70 p-3 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Connector Fit</span>
+              <div className="rounded-lg bg-slate-950/70 p-2.5 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Connector Fit</span>
                 <span className="font-bold text-emerald-400 mt-0.5 block">
                   Compatible
                 </span>
-                <span className="text-[11px] text-slate-400 block truncate">
+                <span className="text-[10px] text-slate-400 block truncate font-mono">
                   {authResult.station?.connectorType}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Matched Reservation Pill (if any) */}
-          {authResult.authorized && authResult.reservation && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-300">
-              <Clock className="h-4 w-4 shrink-0 text-emerald-400" />
-              <span>
-                Advance reservation confirmed: Slot #{authResult.reservation.reservationId} is valid.
-              </span>
-            </div>
-          )}
-
           {/* Action Trigger Area */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800">
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3.5 border-t border-slate-800">
             <button
               onClick={() => {
                 setAuthResult(null);
@@ -556,29 +541,27 @@ export default function StationCheckIn() {
               }}
               className="text-xs text-slate-400 hover:text-white transition"
             >
-              Reset / Scan Next EV
+              ← Reset / Scan Next EV
             </button>
 
             {authResult.authorized ? (
               <button
                 onClick={handleStartCharging}
                 disabled={startLoading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 font-bold text-slate-950 hover:opacity-95 shadow-xl shadow-emerald-500/25 transition disabled:opacity-50 text-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 font-bold text-slate-950 hover:bg-emerald-400 shadow-sm shadow-emerald-500/20 transition disabled:opacity-50 text-xs"
               >
-                <Zap className="h-4 w-4" />
-                <span>{startLoading ? 'Initiating Session...' : 'Plug In & Start Charging'}</span>
-                <ArrowRight className="h-4 w-4" />
+                <Zap className="h-4 w-4 fill-slate-950" />
+                <span>{startLoading ? 'Activating Session...' : 'Plug In & Start Charging'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
               </button>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/smart-charging"
-                  className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:text-white transition"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Find Other Station via Smart Engine</span>
-                </Link>
-              </div>
+              <Link
+                to="/smart-charging"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white transition"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Find Alternative Bay via Smart Engine</span>
+              </Link>
             )}
           </div>
         </div>

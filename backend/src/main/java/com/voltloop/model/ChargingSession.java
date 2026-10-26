@@ -1,9 +1,11 @@
 package com.voltloop.model;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 public class ChargingSession {
     private Integer sessionId;
+    private Integer userId;
     private Integer vehicleId;
     private Integer stationId;
     private Integer reservationId;
@@ -16,12 +18,19 @@ public class ChargingSession {
     private String status; // ACTIVE, COMPLETED, CANCELLED
     private LocalDateTime createdAt;
 
-    // Display fields joined from vehicles and stations
+    // Display fields joined from vehicles, stations, users, and payments
+    private String userName;
+    private String userEmail;
     private String registrationNo;
     private String qrIdentifier;
     private String vehicleType;
     private String stationName;
     private String stationLocation;
+    private String connectorType;
+    private Double powerRating;
+    private String stationQrCode;
+    private String paymentStatus; // PENDING, SUCCESSFUL, UNPAID
+    private String transactionRef;
 
     public ChargingSession() {
     }
@@ -50,6 +59,14 @@ public class ChargingSession {
 
     public void setSessionId(Integer sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 
     public Integer getVehicleId() {
@@ -140,6 +157,22 @@ public class ChargingSession {
         this.createdAt = createdAt;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     public String getRegistrationNo() {
         return registrationNo;
     }
@@ -178,5 +211,52 @@ public class ChargingSession {
 
     public void setStationLocation(String stationLocation) {
         this.stationLocation = stationLocation;
+    }
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
+
+    public Double getPowerRating() {
+        return powerRating;
+    }
+
+    public void setPowerRating(Double powerRating) {
+        this.powerRating = powerRating;
+    }
+
+    public String getStationQrCode() {
+        return stationQrCode;
+    }
+
+    public void setStationQrCode(String stationQrCode) {
+        this.stationQrCode = stationQrCode;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getTransactionRef() {
+        return transactionRef;
+    }
+
+    public void setTransactionRef(String transactionRef) {
+        this.transactionRef = transactionRef;
+    }
+
+    public Long getDurationMinutes() {
+        if (startTime != null && endTime != null) {
+            return Math.max(1L, Duration.between(startTime, endTime).toMinutes());
+        }
+        return 0L;
     }
 }

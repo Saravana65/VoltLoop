@@ -140,4 +140,15 @@ public class VehicleRepository {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, qrIdentifier);
         return count != null && count > 0;
     }
+
+    public List<Vehicle> getVehiclesByUserId(int userId) {
+        String sql = "SELECT v.vehicle_id, v.user_id, v.vehicle_type, v.registration_no, " +
+                "v.battery_capacity, v.current_battery, v.qr_identifier, v.status, v.created_at, " +
+                "u.name AS owner_name, u.email AS owner_email " +
+                "FROM vehicles v " +
+                "JOIN users u ON v.user_id = u.user_id " +
+                "WHERE v.user_id = ? " +
+                "ORDER BY v.vehicle_id DESC";
+        return jdbcTemplate.query(sql, new VehicleRowMapper(), userId);
+    }
 }

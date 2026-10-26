@@ -15,8 +15,8 @@ import {
 import { getAnalytics } from '../services/api';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
-import Loading from '../components/Loading';
-import ErrorMessage from '../components/ErrorMessage';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorAlert from '../components/ErrorAlert';
 import { formatCurrency, formatEnergy } from '../utils/formatters';
 
 export default function Analytics() {
@@ -43,11 +43,7 @@ export default function Analytics() {
   }, []);
 
   if (loading) {
-    return <Loading message="Aggregating campus fleet energy and session analytics..." />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} onRetry={fetchAnalytics} />;
+    return <LoadingSpinner message="Aggregating campus fleet energy and session analytics..." />;
   }
 
   const dailyData = data?.dailyEnergyConsumption || [];
@@ -60,39 +56,40 @@ export default function Analytics() {
   const maxStationEnergy = Math.max(...stationData.map((s) => Number(s.totalEnergy) || 0), 60);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white font-display">
-              Fleet Energy & Utilization Analytics
-            </h1>
-            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-              <ShieldCheck className="h-3.5 w-3.5" />
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-sans">
+              Fleet Energy & Grid Analytics
+            </h2>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/20">
               Live JDBC Ledger
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
             Real-time power dispensing metrics, station utilization distribution, and cost accounting.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchAnalytics}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh Ledger
+            <span>Refresh Ledger</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <ErrorAlert message={error} onRetry={fetchAnalytics} />
+
+      {/* 5-KPI Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
         <StatCard
-          title="Total Energy Consumed"
+          title="Total Energy Dispensed"
           value={data?.totalEnergyConsumed != null ? data.totalEnergyConsumed.toFixed(1) : '0.0'}
           unit="kWh"
           subtext="Audited across all sessions"
@@ -100,7 +97,7 @@ export default function Analytics() {
           accent="amber"
         />
         <StatCard
-          title="Total Charging Sessions"
+          title="Charging Sessions"
           value={data?.totalChargingSessions || 0}
           unit={`(${data?.activeSessionsCount || 0} active)`}
           subtext="Total campus connections"
@@ -108,7 +105,7 @@ export default function Analytics() {
           accent="cyan"
         />
         <StatCard
-          title="Total Charging Cost"
+          title="Total Revenue"
           value={formatCurrency(data?.totalChargingCost || 0)}
           subtext="Audited at ₹15.00/kWh"
           icon={IndianRupee}
@@ -123,34 +120,34 @@ export default function Analytics() {
           accent="purple"
         />
         <StatCard
-          title="Station Utilization"
+          title="Bay Utilization"
           value={`${data?.totalStations ? (((data.totalStations - data.availableStations) / data.totalStations) * 100).toFixed(0) : 0}%`}
           unit={`${data?.totalStations - data?.availableStations}/${data?.totalStations}`}
-          subtext="Bays in use / maintenance"
+          subtext="Bays in active use"
           icon={Layers}
           accent="emerald"
         />
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section: Daily Breakdown (2/3) + Station Usage (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart: Daily Breakdown */}
-        <div className="lg:col-span-2 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div className="lg:col-span-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-emerald-400" />
                 Daily Charging Trends
               </h3>
-              <p className="text-xs text-slate-400">Timeline breakdown across active charging dates</p>
+              <p className="text-[11px] text-slate-400">Timeline breakdown across active charging dates</p>
             </div>
 
-            <div className="flex items-center gap-1.5 rounded-lg bg-slate-950 p-1 border border-slate-800">
+            <div className="flex items-center gap-1 rounded-lg bg-slate-950 p-1 border border-slate-800 self-start sm:self-auto">
               <button
                 onClick={() => setActiveChartTab('energy')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition ${
                   activeChartTab === 'energy'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -158,9 +155,9 @@ export default function Analytics() {
               </button>
               <button
                 onClick={() => setActiveChartTab('sessions')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition ${
                   activeChartTab === 'sessions'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -168,9 +165,9 @@ export default function Analytics() {
               </button>
               <button
                 onClick={() => setActiveChartTab('cost')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition ${
                   activeChartTab === 'cost'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -180,13 +177,13 @@ export default function Analytics() {
           </div>
 
           {/* SVG Bar Visualizer */}
-          <div className="h-64 w-full pt-4">
+          <div className="h-56 w-full pt-4">
             {dailyData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                No daily energy telemetry available.
+                No daily energy telemetry recorded.
               </div>
             ) : (
-              <div className="h-full flex items-end justify-between gap-3 px-2 pb-6 border-b border-slate-800">
+              <div className="h-full flex items-end justify-between gap-2 sm:gap-3 px-2 pb-6 border-b border-slate-800/80">
                 {dailyData.map((item, idx) => {
                   let val = 0;
                   let maxVal = 1;
@@ -210,7 +207,7 @@ export default function Analytics() {
                     displayVal = `₹${val}`;
                   }
 
-                  const heightPercent = Math.max(12, Math.round((val / maxVal) * 100));
+                  const heightPercent = Math.max(10, Math.round((val / maxVal) * 100));
 
                   return (
                     <div
@@ -225,12 +222,12 @@ export default function Analytics() {
 
                       {/* Bar */}
                       <div
-                        className={`w-full max-w-[48px] rounded-t-md transition-all duration-500 ${colorClass} opacity-85 group-hover:opacity-100 shadow-md`}
+                        className={`w-full max-w-[42px] rounded-t-md transition-all duration-300 ${colorClass} opacity-85 group-hover:opacity-100 shadow-sm`}
                         style={{ height: `${heightPercent}%` }}
                       />
 
                       {/* Date label */}
-                      <span className="absolute -bottom-5 text-[10px] font-mono text-slate-400 truncate max-w-[60px]">
+                      <span className="absolute -bottom-5 text-[10px] font-mono text-slate-400 truncate max-w-[50px]">
                         {item.date ? item.date.slice(5) : `D${idx + 1}`}
                       </span>
                     </div>
@@ -242,26 +239,26 @@ export default function Analytics() {
         </div>
 
         {/* Station Usage Breakdown */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg space-y-4">
+        <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-sm space-y-4">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Activity className="h-4 w-4 text-cyan-400" />
-              Station Bay Energy Dispensed
+              Station Energy Dispensed
             </h3>
-            <p className="text-xs text-slate-400">Total kWh delivered per campus charging station</p>
+            <p className="text-[11px] text-slate-400">Total kWh delivered per campus charging station</p>
           </div>
 
-          <div className="space-y-4 pt-2">
+          <div className="space-y-3.5 pt-1">
             {stationData.map((station) => {
               const energy = Number(station.totalEnergy) || 0;
               const percent = Math.round((energy / maxStationEnergy) * 100);
 
               return (
-                <div key={station.stationId} className="space-y-1.5">
+                <div key={station.stationId} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white">{station.stationName}</span>
-                      <span className="rounded bg-slate-800 px-1.5 py-0.2 text-[10px] font-mono text-slate-300">
+                      <span className="font-bold text-white truncate max-w-[140px]">{station.stationName}</span>
+                      <span className="rounded bg-slate-850 px-1.5 py-0.2 text-[10px] font-mono text-slate-300 border border-slate-800">
                         {station.powerRating} kW
                       </span>
                     </div>
@@ -270,15 +267,15 @@ export default function Analytics() {
                     </span>
                   </div>
 
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-950 border border-slate-800">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700"
-                      style={{ width: `${Math.max(3, percent)}%` }}
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
+                      style={{ width: `${Math.max(4, percent)}%` }}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                    <span>{station.sessionCount} sessions completed</span>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>{station.sessionCount} sessions</span>
                     <span>{formatCurrency(station.totalCost || 0)}</span>
                   </div>
                 </div>
@@ -289,11 +286,11 @@ export default function Analytics() {
       </div>
 
       {/* Station Utilization Ledger Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white">Station Utilization Ledger</h3>
-            <p className="text-xs text-slate-400">Comprehensive hardware utilization and electrical load</p>
+            <h3 className="text-sm font-bold text-white">Station Utilization Ledger</h3>
+            <p className="text-[11px] text-slate-400">Comprehensive hardware utilization and electrical load breakdown</p>
           </div>
           <span className="text-xs font-mono text-slate-400">
             {stationData.length} bays configured
@@ -301,39 +298,39 @@ export default function Analytics() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-              <tr>
-                <th className="p-3.5">Station ID</th>
-                <th className="p-3.5">Station Bay</th>
-                <th className="p-3.5">Location</th>
-                <th className="p-3.5">Power & Standard</th>
-                <th className="p-3.5">Sessions</th>
-                <th className="p-3.5">Energy Dispensed</th>
-                <th className="p-3.5">Total Revenue</th>
-                <th className="p-3.5">Operational Status</th>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800/80 bg-slate-950/70 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                <th className="py-3 px-3.5">ID</th>
+                <th className="py-3 px-3.5">Station Bay</th>
+                <th className="py-3 px-3.5">Location</th>
+                <th className="py-3 px-3.5">Power & Standard</th>
+                <th className="py-3 px-3.5 text-center">Sessions</th>
+                <th className="py-3 px-3.5 text-right">Energy Dispensed</th>
+                <th className="py-3 px-3.5 text-right">Total Revenue</th>
+                <th className="py-3 px-3.5 text-center">Operational Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-800/50">
               {stationData.map((st) => (
-                <tr key={st.stationId} className="hover:bg-slate-800/30 transition">
-                  <td className="p-3.5 font-mono font-bold text-slate-400">#{st.stationId}</td>
-                  <td className="p-3.5 font-bold text-white">{st.stationName}</td>
-                  <td className="p-3.5 text-slate-300">{st.location}</td>
-                  <td className="p-3.5">
+                <tr key={st.stationId} className="hover:bg-slate-850/40 transition">
+                  <td className="py-3 px-3.5 font-mono text-slate-400">#{st.stationId}</td>
+                  <td className="py-3 px-3.5 font-bold text-white">{st.stationName}</td>
+                  <td className="py-3 px-3.5 text-slate-300">{st.location}</td>
+                  <td className="py-3 px-3.5">
                     <span className="font-mono text-cyan-400 font-semibold">{st.powerRating} kW</span>
-                    <span className="text-slate-400 ml-1.5 font-medium">({st.connectorType})</span>
+                    <span className="text-slate-400 ml-1.5 font-mono text-[11px]">({st.connectorType})</span>
                   </td>
-                  <td className="p-3.5 font-mono text-white font-semibold">
+                  <td className="py-3 px-3.5 font-mono text-white font-semibold text-center">
                     {st.sessionCount}
                   </td>
-                  <td className="p-3.5 font-mono font-semibold text-amber-400">
+                  <td className="py-3 px-3.5 font-mono font-bold text-amber-400 text-right">
                     {formatEnergy(st.totalEnergy)}
                   </td>
-                  <td className="p-3.5 font-mono font-semibold text-emerald-400">
+                  <td className="py-3 px-3.5 font-mono font-bold text-emerald-400 text-right">
                     {formatCurrency(st.totalCost)}
                   </td>
-                  <td className="p-3.5">
+                  <td className="py-3 px-3.5 text-center">
                     <StatusBadge status={st.status} />
                   </td>
                 </tr>

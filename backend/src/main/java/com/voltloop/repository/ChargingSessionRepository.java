@@ -32,6 +32,10 @@ public class ChargingSessionRepository {
         public ChargingSession mapRow(ResultSet rs, int rowNum) throws SQLException {
             ChargingSession session = new ChargingSession();
             session.setSessionId(rs.getInt("session_id"));
+            try {
+                int uid = rs.getInt("user_id");
+                if (!rs.wasNull()) session.setUserId(uid);
+            } catch (SQLException ignored) {}
             session.setVehicleId(rs.getInt("vehicle_id"));
             session.setStationId(rs.getInt("station_id"));
 
@@ -64,45 +68,61 @@ public class ChargingSessionRepository {
                 session.setCreatedAt(createdTs.toLocalDateTime());
             }
 
+            try { session.setUserName(rs.getString("user_name")); } catch (SQLException ignored) {}
+            try { session.setUserEmail(rs.getString("user_email")); } catch (SQLException ignored) {}
+            try { session.setRegistrationNo(rs.getString("registration_no")); } catch (SQLException ignored) {}
+            try { session.setQrIdentifier(rs.getString("qr_identifier")); } catch (SQLException ignored) {}
+            try { session.setVehicleType(rs.getString("vehicle_type")); } catch (SQLException ignored) {}
+            try { session.setStationName(rs.getString("station_name")); } catch (SQLException ignored) {}
+            try { session.setStationLocation(rs.getString("location")); } catch (SQLException ignored) {}
+            try { session.setConnectorType(rs.getString("connector_type")); } catch (SQLException ignored) {}
             try {
-                session.setRegistrationNo(rs.getString("registration_no"));
+                double pr = rs.getDouble("power_rating");
+                if (!rs.wasNull()) session.setPowerRating(pr);
             } catch (SQLException ignored) {}
-            try {
-                session.setQrIdentifier(rs.getString("qr_identifier"));
-            } catch (SQLException ignored) {}
-            try {
-                session.setVehicleType(rs.getString("vehicle_type"));
-            } catch (SQLException ignored) {}
-            try {
-                session.setStationName(rs.getString("station_name"));
-            } catch (SQLException ignored) {}
-            try {
-                session.setStationLocation(rs.getString("location"));
-            } catch (SQLException ignored) {}
+            try { session.setStationQrCode(rs.getString("qr_code")); } catch (SQLException ignored) {}
+            try { session.setPaymentStatus(rs.getString("payment_status")); } catch (SQLException ignored) {}
+            try { session.setTransactionRef(rs.getString("transaction_ref")); } catch (SQLException ignored) {}
 
             return session;
         }
     }
 
+    private static final String BASE_SELECT =
+            "SELECT s.*, u.name AS user_name, u.email AS user_email, " +
+            "v.registration_no, v.qr_identifier, v.vehicle_type, " +
+            "cs.station_name, cs.location, cs.connector_type, cs.power_rating, cs.qr_code, " +
+            "p.status AS payment_status, p.transaction_ref " +
+            "FROM charging_sessions s " +
+            "LEFT JOIN users u ON s.user_id = u.user_id " +
+            "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
+            "JOIN charging_stations cs ON s.station_id = cs.station_id " +
+            "LEFT JOIN payments p ON s.session_id = p.session_id AND p.status = 'SUCCESSFUL' ";
+
     public ChargingSession startChargingSession(ChargingSession session) {
-        String sql = "INSERT INTO charging_sessions (vehicle_id, station_id, reservation_id, start_time, " +
-                "initial_battery, energy_consumed, charging_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO charging_sessions (user_id, vehicle_id, station_id, reservation_id, start_time, " +
+                "initial_battery, energy_consumed, charging_cost, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, session.getVehicleId());
-            ps.setInt(2, session.getStationId());
-            if (session.getReservationId() != null) {
-                ps.setInt(3, session.getReservationId());
+            if (session.getUserId() != null) {
+                ps.setInt(1, session.getUserId());
             } else {
-                ps.setNull(3, Types.INTEGER);
+                ps.setNull(1, Types.INTEGER);
             }
-            ps.setTimestamp(4, Timestamp.valueOf(session.getStartTime() != null ? session.getStartTime() : LocalDateTime.now()));
-            ps.setDouble(5, session.getInitialBattery());
-            ps.setDouble(6, session.getEnergyConsumed() != null ? session.getEnergyConsumed() : 0.00);
-            ps.setDouble(7, session.getChargingCost() != null ? session.getChargingCost() : 0.00);
-            ps.setString(8, "ACTIVE");
+            ps.setInt(2, session.getVehicleId());
+            ps.setInt(3, session.getStationId());
+            if (session.getReservationId() != null) {
+                ps.setInt(4, session.getReservationId());
+            } else {
+                ps.setNull(4, Types.INTEGER);
+            }
+            ps.setTimestamp(5, Timestamp.valueOf(session.getStartTime() != null ? session.getStartTime() : LocalDateTime.now()));
+            ps.setDouble(6, session.getInitialBattery());
+            ps.setDouble(7, session.getEnergyConsumed() != null ? session.getEnergyConsumed() : 0.00);
+            ps.setDouble(8, session.getChargingCost() != null ? session.getChargingCost() : 0.00);
+            ps.setString(9, "ACTIVE");
             return ps;
         }, keyHolder);
 
@@ -128,40 +148,37 @@ public class ChargingSessionRepository {
     }
 
     public List<ChargingSession> getAllSessions() {
-        String sql = "SELECT s.*, v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location " +
-                "FROM charging_sessions s " +
-                "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
-                "JOIN charging_stations cs ON s.station_id = cs.station_id " +
-                "ORDER BY s.start_time DESC";
+        String sql = BASE_SELECT + "ORDER BY s.start_time DESC";
         return jdbcTemplate.query(sql, new SessionRowMapper());
     }
 
     public List<ChargingSession> getActiveChargingSessions() {
-        String sql = "SELECT s.*, v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location " +
-                "FROM charging_sessions s " +
-                "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
-                "JOIN charging_stations cs ON s.station_id = cs.station_id " +
-                "WHERE s.status = 'ACTIVE' " +
-                "ORDER BY s.start_time DESC";
+        String sql = BASE_SELECT + "WHERE s.status = 'ACTIVE' ORDER BY s.start_time DESC";
         return jdbcTemplate.query(sql, new SessionRowMapper());
     }
 
+    public List<ChargingSession> getSessionsByUserId(int userId) {
+        String sql = BASE_SELECT + "WHERE s.user_id = ? ORDER BY s.start_time DESC";
+        return jdbcTemplate.query(sql, new SessionRowMapper(), userId);
+    }
+
+    public List<ChargingSession> getSessionsByStationOwnerId(int ownerId) {
+        String sql = BASE_SELECT + "WHERE cs.owner_id = ? ORDER BY s.start_time DESC";
+        return jdbcTemplate.query(sql, new SessionRowMapper(), ownerId);
+    }
+
+    public List<ChargingSession> getActiveSessionsByStationOwnerId(int ownerId) {
+        String sql = BASE_SELECT + "WHERE cs.owner_id = ? AND s.status = 'ACTIVE' ORDER BY s.start_time DESC";
+        return jdbcTemplate.query(sql, new SessionRowMapper(), ownerId);
+    }
+
     public List<ChargingSession> getChargingHistoryByVehicle(int vehicleId) {
-        String sql = "SELECT s.*, v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location " +
-                "FROM charging_sessions s " +
-                "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
-                "JOIN charging_stations cs ON s.station_id = cs.station_id " +
-                "WHERE s.vehicle_id = ? " +
-                "ORDER BY s.start_time DESC";
+        String sql = BASE_SELECT + "WHERE s.vehicle_id = ? ORDER BY s.start_time DESC";
         return jdbcTemplate.query(sql, new SessionRowMapper(), vehicleId);
     }
 
     public Optional<ChargingSession> getSessionById(int sessionId) {
-        String sql = "SELECT s.*, v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location " +
-                "FROM charging_sessions s " +
-                "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
-                "JOIN charging_stations cs ON s.station_id = cs.station_id " +
-                "WHERE s.session_id = ?";
+        String sql = BASE_SELECT + "WHERE s.session_id = ?";
         try {
             ChargingSession session = jdbcTemplate.queryForObject(sql, new SessionRowMapper(), sessionId);
             return Optional.ofNullable(session);
@@ -171,13 +188,19 @@ public class ChargingSessionRepository {
     }
 
     public Optional<ChargingSession> findActiveSessionByVehicleId(int vehicleId) {
-        String sql = "SELECT s.*, v.registration_no, v.qr_identifier, v.vehicle_type, cs.station_name, cs.location " +
-                "FROM charging_sessions s " +
-                "JOIN vehicles v ON s.vehicle_id = v.vehicle_id " +
-                "JOIN charging_stations cs ON s.station_id = cs.station_id " +
-                "WHERE s.vehicle_id = ? AND s.status = 'ACTIVE'";
+        String sql = BASE_SELECT + "WHERE s.vehicle_id = ? AND s.status = 'ACTIVE'";
         try {
             ChargingSession session = jdbcTemplate.queryForObject(sql, new SessionRowMapper(), vehicleId);
+            return Optional.ofNullable(session);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<ChargingSession> findActiveSessionByUserId(int userId) {
+        String sql = BASE_SELECT + "WHERE s.user_id = ? AND s.status = 'ACTIVE' ORDER BY s.start_time DESC LIMIT 1";
+        try {
+            ChargingSession session = jdbcTemplate.queryForObject(sql, new SessionRowMapper(), userId);
             return Optional.ofNullable(session);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();

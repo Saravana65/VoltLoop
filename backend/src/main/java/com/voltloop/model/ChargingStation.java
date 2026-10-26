@@ -4,12 +4,14 @@ import java.time.LocalDateTime;
 
 public class ChargingStation {
     private Integer stationId;
+    private Integer ownerId;
     private String stationName;
     private String location;
     private String chargerType;
     private Double powerRating;
     private String connectorType;
     private String status; // AVAILABLE, OCCUPIED, MAINTENANCE
+    private String qrCode; // e.g. VL-ST-001 for customer QR station scanning
     private LocalDateTime createdAt;
 
     public ChargingStation() {
@@ -27,12 +29,34 @@ public class ChargingStation {
         this.createdAt = createdAt;
     }
 
+    public ChargingStation(Integer stationId, Integer ownerId, String stationName, String location, String chargerType,
+                           Double powerRating, String connectorType, String status, String qrCode, LocalDateTime createdAt) {
+        this.stationId = stationId;
+        this.ownerId = ownerId;
+        this.stationName = stationName;
+        this.location = location;
+        this.chargerType = chargerType;
+        this.powerRating = powerRating;
+        this.connectorType = connectorType;
+        this.status = status;
+        this.qrCode = qrCode;
+        this.createdAt = createdAt;
+    }
+
     public Integer getStationId() {
         return stationId;
     }
 
     public void setStationId(Integer stationId) {
         this.stationId = stationId;
+    }
+
+    public Integer getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Integer ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getStationName() {
@@ -81,6 +105,14 @@ public class ChargingStation {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getQrCode() {
+        return qrCode;
+    }
+
+    public void setQrCode(String qrCode) {
+        this.qrCode = qrCode;
     }
 
     public LocalDateTime getCreatedAt() {

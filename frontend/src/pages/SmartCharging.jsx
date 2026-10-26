@@ -1,6 +1,21 @@
-﻿import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Zap, Battery, Clock, IndianRupee, AlertCircle, CheckCircle2, ArrowRight, ShieldAlert, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import {
+  Sparkles,
+  Zap,
+  Battery,
+  Clock,
+  IndianRupee,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  ShieldAlert,
+  Award,
+  Cpu,
+  Layers,
+  Sliders,
+  QrCode,
+} from 'lucide-react';
 import { vehiclesApi, smartChargingApi } from '../services/api';
 import QRScanner from '../components/QRScanner';
 import StatusBadge from '../components/StatusBadge';
@@ -100,257 +115,293 @@ export default function SmartCharging() {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="border-b border-slate-800 pb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 p-2 shadow-lg shadow-emerald-500/20">
-            <Sparkles className="h-6 w-6 text-slate-950" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white font-display">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800/80">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-sans">
               Smart Charging Allocation Engine
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Deterministic, rule-based charging station recommendation based on battery SoC, connector compatibility, and queue urgency.
-            </p>
+            </h2>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-mono font-bold text-emerald-400 border border-emerald-500/20">
+              Rule-Based
+            </span>
           </div>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">
+            Intelligently pairs vehicles with optimal charging bays based on battery SoC, power rating, compatibility, and queue urgency.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Link
+            to="/station-checkin"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white transition"
+          >
+            <QrCode className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Terminal Check-In</span>
+          </Link>
         </div>
       </div>
 
       {actionSuccess && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-4 text-emerald-300 shadow-md flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-          <div>
-            <span className="font-bold text-white block">Session Active</span>
-            <p className="text-xs">{actionSuccess} Redirecting to active sessions...</p>
-          </div>
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-300 flex items-center gap-2.5 shadow-sm">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <span>{actionSuccess} Redirecting to live sessions...</span>
         </div>
       )}
 
       {actionError && <ErrorAlert message={actionError} />}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Step 1: EV Identification */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            Step 1: Identify Electric Vehicle
-          </h2>
+      {/* Main Allocation Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Input Parameters (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
+                  <Sliders className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Allocation Parameters</h3>
+                  <p className="text-[11px] text-slate-400">Select EV and charging preferences</p>
+                </div>
+              </div>
+            </div>
 
-          <QRScanner
-            embedded={true}
-            onVehicleFound={(veh) => handleVehicleSelected(veh)}
-          />
+            {/* EV Selection Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Target Electric Vehicle *
+              </label>
+              <select
+                value={selectedVehicle?.vehicleId || ''}
+                onChange={(e) => {
+                  const match = vehicles.find((v) => v.vehicleId === Number(e.target.value));
+                  if (match) handleVehicleSelected(match);
+                }}
+                className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="">-- Choose a registered EV --</option>
+                {vehicles.map((v) => (
+                  <option key={v.vehicleId} value={v.vehicleId}>
+                    {v.registrationNo} ({v.vehicleType}) • {v.currentBattery}% SoC • {v.qrIdentifier}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-            <label className="block text-xs font-medium text-slate-400">Or select directly from registered fleet:</label>
-            <select
-              value={selectedVehicle?.vehicleId || ''}
-              onChange={(e) => {
-                const found = vehicles.find((v) => v.vehicleId === Number(e.target.value));
-                if (found) handleVehicleSelected(found);
-              }}
-              className="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+            {/* Quick Demo EV Chips */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+                Or select demo sample chip:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {vehicles.slice(0, 5).map((v) => (
+                  <button
+                    key={v.vehicleId}
+                    type="button"
+                    onClick={() => handleVehicleSelected(v)}
+                    className={`rounded-md px-2.5 py-1 text-[11px] font-mono transition ${
+                      selectedVehicle?.vehicleId === v.vehicleId
+                        ? 'bg-emerald-500 text-slate-950 font-bold'
+                        : 'border border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    {v.qrIdentifier} ({v.currentBattery}%)
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Vehicle Telemetry Snapshot */}
+            {selectedVehicle && (
+              <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3.5 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Current Battery</span>
+                  <span className="font-mono font-bold text-emerald-400 text-sm">{selectedVehicle.currentBattery}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Battery Pack</span>
+                  <span className="font-mono text-white">{selectedVehicle.batteryCapacity} kWh</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Status</span>
+                  <StatusBadge status={selectedVehicle.status} />
+                </div>
+              </div>
+            )}
+
+            {/* Target Battery Slider */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5 text-xs">
+                <label className="font-semibold text-slate-300">Desired Target SoC</label>
+                <span className="font-mono font-bold text-white">{targetBattery}%</span>
+              </div>
+              <input
+                type="range"
+                min={selectedVehicle?.currentBattery || 10}
+                max="100"
+                step="5"
+                value={targetBattery}
+                onChange={(e) => setTargetBattery(Number(e.target.value))}
+                className="w-full accent-emerald-500 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>Current ({selectedVehicle?.currentBattery || 0}%)</span>
+                <span>Standard (80%)</span>
+                <span>Full (100%)</span>
+              </div>
+            </div>
+
+            {/* Waiting Time Slider */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5 text-xs">
+                <label className="font-semibold text-slate-300">Queue Waiting Time</label>
+                <span className="font-mono font-bold text-cyan-400">{waitingMinutes} mins</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="60"
+                step="5"
+                value={waitingMinutes}
+                onChange={(e) => setWaitingMinutes(Number(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+              <span className="text-[10px] text-slate-400 block mt-1">
+                Increases urgency score by up to 50 points based on waiting time.
+              </span>
+            </div>
+
+            <button
+              onClick={handleGetRecommendation}
+              disabled={!selectedVehicle || recLoading}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500 py-2.5 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition shadow-sm shadow-emerald-500/20 disabled:opacity-50"
             >
-              <option value="">-- Choose an EV --</option>
-              {vehicles.map((v) => (
-                <option key={v.vehicleId} value={v.vehicleId}>
-                  {v.registrationNo} ({v.vehicleType}) — {v.currentBattery}% [{v.qrIdentifier}]
-                </option>
-              ))}
-            </select>
+              <Cpu className="h-4 w-4 fill-slate-950" />
+              <span>{recLoading ? 'Evaluating Priority Rules...' : 'Compute Optimal Station'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Step 2: Telemetry & Optimization Parameters */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            Step 2: Battery Telemetry & Targets
-          </h2>
+        {/* Right Column: Engine Recommendation Output (7 cols) */}
+        <div className="lg:col-span-7">
+          {recError && <ErrorAlert message={recError} />}
 
-          {!selectedVehicle ? (
-            <div className="rounded-xl border border-dashed border-slate-800 p-12 text-center bg-slate-900/30 flex flex-col items-center justify-center">
-              <Battery className="h-10 w-10 text-slate-700 mb-2" />
-              <p className="text-sm text-slate-400">Scan or select an EV to read battery telemetry</p>
+          {!recommendation && !recError && (
+            <div className="h-full rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-12 flex flex-col items-center justify-center text-center">
+              <Cpu className="h-12 w-12 text-slate-700 mb-3" />
+              <h3 className="text-sm font-bold text-white">Rule-Based Allocation Standby</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                Select an EV on the left and click "Compute Optimal Station" to evaluate campus charging priority and compatibility.
+              </p>
             </div>
-          ) : (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg space-y-4">
-              <div className="flex items-start justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-white">{selectedVehicle.registrationNo}</h3>
-                    <span className="font-mono text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                      {selectedVehicle.qrIdentifier}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">{selectedVehicle.vehicleType}</p>
-                </div>
-                <StatusBadge status={selectedVehicle.status} />
-              </div>
+          )}
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg bg-slate-950 p-3 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Current State of Charge</span>
-                  <div className="mt-1 flex items-baseline gap-1">
-                    <span className="text-xl font-extrabold text-white">{selectedVehicle.currentBattery}</span>
-                    <span className="text-xs font-semibold text-slate-400">%</span>
+          {recommendation && (
+            <div className="rounded-xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-sm space-y-5">
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
+                    <Award className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white font-sans">
+                      Optimal Charging Station Assigned
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Calculated using multi-factor urgency and compatibility matrix
+                    </p>
                   </div>
                 </div>
-                <div className="rounded-lg bg-slate-950 p-3 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Battery Pack Capacity</span>
-                  <div className="mt-1 flex items-baseline gap-1">
-                    <span className="text-xl font-extrabold text-white">{selectedVehicle.batteryCapacity}</span>
-                    <span className="text-xs font-semibold text-slate-400">kWh</span>
+
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Priority Score</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">
+                    {recommendation.priorityScore} <span className="text-xs text-slate-400 font-normal">pts</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Recommended Station Card */}
+              {recommendation.recommendedStation ? (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                        Assigned Hardware Node
+                      </span>
+                      <h4 className="text-lg font-bold text-white mt-0.5">
+                        {recommendation.recommendedStation.stationName}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {recommendation.recommendedStation.location}
+                      </p>
+                    </div>
+                    <StatusBadge status={recommendation.recommendedStation.status} />
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-emerald-500/20 text-xs">
+                    <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Power Rating</span>
+                      <span className="font-mono font-bold text-white">{recommendation.recommendedStation.powerRating} kW</span>
+                    </div>
+                    <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Connector</span>
+                      <span className="font-mono font-bold text-emerald-400 truncate block">
+                        {recommendation.recommendedStation.connectorType}
+                      </span>
+                    </div>
+                    <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Energy Req.</span>
+                      <span className="font-mono font-bold text-cyan-400">
+                        {formatEnergy(recommendation.energyRequiredKwh)}
+                      </span>
+                    </div>
+                    <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Est. Cost</span>
+                      <span className="font-mono font-bold text-emerald-400">
+                        {formatCurrency(recommendation.estimatedCost)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
+                    <span>Estimated Duration: <strong className="text-white font-mono">{formatDuration(recommendation.estimatedDurationMinutes)}</strong></span>
+                    <span className="text-emerald-400 font-semibold text-[11px]">✓ Fully Compatible</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-1.5 pt-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Desired Target Battery (%):</span>
-                  <span className="font-bold text-emerald-400">{targetBattery}%</span>
+              ) : (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300">
+                  <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>No Compatible Charging Bays Available</span>
+                  </div>
+                  <p className="mt-1 text-amber-200">
+                    All matching stations are currently occupied or in maintenance. Vehicle added to priority queue.
+                  </p>
                 </div>
-                <input
-                  type="range"
-                  min={Math.ceil(selectedVehicle.currentBattery)}
-                  max="100"
-                  step="5"
-                  value={targetBattery}
-                  onChange={(e) => setTargetBattery(Number(e.target.value))}
-                  className="w-full accent-emerald-500"
-                />
-              </div>
+              )}
 
-              <div className="pt-1">
-                <label className="block text-xs font-medium text-slate-300">
-                  Virtual Queue Waiting Time (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="180"
-                  value={waitingMinutes}
-                  onChange={(e) => setWaitingMinutes(Number(e.target.value))}
-                  className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                  placeholder="0"
-                />
-                <span className="text-[10px] text-slate-500">Adds priority points (+1 pt/min, max 50 pts)</span>
-              </div>
-
-              <button
-                onClick={handleGetRecommendation}
-                disabled={recLoading}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 p-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 hover:opacity-90 transition disabled:opacity-50"
-              >
-                {recLoading ? (
-                  <>
-                    <Clock className="h-4 w-4 animate-spin" /> Evaluating Smart Allocation Matrix...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" /> Run Smart Allocation Recommendation
-                  </>
-                )}
-              </button>
+              {/* Action Button */}
+              {recommendation.recommendedStation && (
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={handleStartCharging}
+                    disabled={actionLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                  >
+                    <Zap className="h-4 w-4 fill-slate-950" />
+                    <span>{actionLoading ? 'Connecting to Station...' : 'Start Charging Immediately'}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
-
-      {recError && <ErrorAlert message={recError} onRetry={handleGetRecommendation} />}
-
-      {/* Step 3: Recommendation Results Card */}
-      {recommendation && (
-        <div className="rounded-xl border border-emerald-500/40 bg-slate-900/90 p-6 shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-emerald-500/20 p-2 text-emerald-400">
-                <Award className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Recommended Charging Bay</h3>
-                <p className="text-xs text-slate-400">Calculated by Java backend Smart Allocation Engine</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Priority Score:</span>
-              <span className="rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-sm font-extrabold text-emerald-400">
-                {recommendation.priorityScore} pts
-              </span>
-              <StatusBadge status={recommendation.urgencyLevel} />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 flex items-start gap-3">
-            <Zap className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-white block text-sm mb-1">Decision Logic & Allocation Reason</span>
-              <p className="leading-relaxed">{recommendation.reason}</p>
-            </div>
-          </div>
-
-          {recommendation.recommendedStation ? (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Station Name</span>
-                  <span className="text-lg font-bold text-white mt-1 block">
-                    {recommendation.recommendedStation.stationName}
-                  </span>
-                  <span className="text-[11px] text-slate-400 truncate block mt-0.5">
-                    {recommendation.recommendedStation.location}
-                  </span>
-                </div>
-
-                <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Power & Connector</span>
-                  <span className="text-lg font-bold text-cyan-400 mt-1 block">
-                    {recommendation.recommendedStation.powerRating} kW
-                  </span>
-                  <span className="text-[11px] text-slate-300 block mt-0.5">
-                    {recommendation.recommendedStation.connectorType}
-                  </span>
-                </div>
-
-                <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Estimated Turnaround</span>
-                  <span className="text-lg font-bold text-emerald-400 mt-1 block">
-                    ~{recommendation.estimatedChargingMinutes} mins
-                  </span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    ({recommendation.estimatedChargingHours} hrs)
-                  </span>
-                </div>
-
-                <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px]">Energy & Billing</span>
-                  <span className="text-lg font-bold text-amber-300 mt-1 block">
-                    {formatEnergy(recommendation.requiredEnergyKwh)}
-                  </span>
-                  <span className="text-[11px] text-emerald-400 font-semibold block mt-0.5">
-                    {formatCurrency(recommendation.estimatedCost)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                <button
-                  onClick={handleStartCharging}
-                  disabled={actionLoading}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-6 py-2.5 text-xs font-bold text-slate-950 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25 transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Activating Session...' : 'Start Charging Immediately'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="p-6 text-center text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-              <AlertCircle className="mx-auto h-6 w-6 mb-2 text-amber-400" />
-              No compatible charging stations are currently AVAILABLE. Please wait or book a future reservation.
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
