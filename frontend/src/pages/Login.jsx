@@ -10,8 +10,8 @@ export default function Login() {
   const isCustomerInitial = portalParam === 'CUSTOMER' || location.pathname.includes('/customer');
 
   const [activeTab, setActiveTab] = useState(isCustomerInitial ? 'CUSTOMER' : 'OWNER');
-  const [email, setEmail] = useState(isCustomerInitial ? 'amit.verma@campus.edu' : 'rajesh.sharma@campus.edu');
-  const [password, setPassword] = useState(isCustomerInitial ? 'Customer@2026' : 'Owner@VoltLoop2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,25 +24,14 @@ export default function Login() {
     const p = params.get('portal')?.toUpperCase();
     if (p === 'CUSTOMER' || location.pathname.includes('/customer')) {
       setActiveTab('CUSTOMER');
-      setEmail('amit.verma@campus.edu');
-      setPassword('Customer@2026');
     } else if (p === 'OWNER' || location.pathname.includes('/owner')) {
       setActiveTab('OWNER');
-      setEmail('rajesh.sharma@campus.edu');
-      setPassword('Owner@VoltLoop2026');
     }
   }, [location.pathname, location.search]);
 
   const handleTabChange = (portal) => {
     setActiveTab(portal);
     setError('');
-    if (portal === 'OWNER') {
-      setEmail('rajesh.sharma@campus.edu');
-      setPassword('Owner@VoltLoop2026');
-    } else {
-      setEmail('amit.verma@campus.edu');
-      setPassword('Customer@2026');
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -180,26 +169,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Quick Demo Credentials Autofill Pill */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeTab === 'OWNER') {
-                    setEmail('rajesh.sharma@campus.edu');
-                    setPassword('Owner@VoltLoop2026');
-                  } else {
-                    setEmail('amit.verma@campus.edu');
-                    setPassword('Customer@2026');
-                  }
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#1a1a1a] hover:bg-[#202020] border border-[#2A2A2A] text-[11px] text-[#A3A3A3] transition"
-              >
-                <span>Prefill demo {activeTab.toLowerCase()} credentials</span>
-                <span className="font-mono text-[#FF7A00] font-bold">Auto Fill</span>
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -227,21 +196,6 @@ export default function Login() {
                 Create a Customer Account
               </Link>
             </p>
-          </div>
-        </div>
-
-        {/* Demo Credentials Helper Box */}
-        <div className="mt-6 bg-[#121212]/80 border border-[#2A2A2A] rounded-xl p-3.5 text-center text-xs text-[#A3A3A3]">
-          <p className="font-semibold text-white mb-1">PBL Live Demonstration Accounts</p>
-          <div className="grid grid-cols-2 gap-2 text-[11px] font-mono mt-2">
-            <div className="p-2 rounded bg-[#181818] border border-[#2A2A2A]">
-              <span className="block text-[#F04438] font-bold">Owner Access</span>
-              <span className="text-[#A3A3A3]">rajesh.sharma@campus.edu</span>
-            </div>
-            <div className="p-2 rounded bg-[#181818] border border-[#2A2A2A]">
-              <span className="block text-[#FF7A00] font-bold">Customer Access</span>
-              <span className="text-[#A3A3A3]">amit.verma@campus.edu</span>
-            </div>
           </div>
         </div>
       </div>
